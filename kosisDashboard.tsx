@@ -297,7 +297,7 @@ export default function App() {
   };
 
   // 실시간 행동/풀이 상태를 Firestore에 동기화
-  const saveRealtimeProgress = async (updatedWorksheet = worksheet, updatedQuizAnswers = quizAnswers, isFinalSubmit = false) => {
+  const saveRealtimeProgress = async (updatedWorksheet: { obs1: string; obs2: string; simAnalysis: string; policyProposal: string } = worksheet, updatedQuizAnswers = quizAnswers, isFinalSubmit = false) => {
     if (!user || !studentName.trim()) return;
 
     const stdId = auth.currentUser?.uid || 'anonymous-user';
