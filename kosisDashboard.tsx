@@ -23,17 +23,15 @@ import {
 // ==========================================
 // 1. FIREBASE 환경설정 및 초기화
 // ==========================================
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'kosis-pop-dashboard-default';
-const firebaseConfig = typeof __firebase_config !== 'undefined' 
-  ? JSON.parse(__firebase_config) 
-  : {
-      apiKey: "",
-      authDomain: "mock-auth-domain.firebaseapp.com",
-      projectId: "mock-project-id",
-      storageBucket: "mock-project-id.appspot.com",
-      messagingSenderId: "1234567890",
-      appId: "1:1234567890:web:1234567890"
-    };
+const appId = 'kosis-pop-dashboard-default';
+const firebaseConfig = {
+  apiKey: "AIzaSyCdbj-9BrRPXZEEzKx54V9tQE70pddpZCw",
+  authDomain: "aiteaching-2026.firebaseapp.com",
+  projectId: "aiteaching-2026",
+  storageBucket: "aiteaching-2026.firebasestorage.app",
+  messagingSenderId: "904057962716",
+  appId: "1:904057962716:web:e927f86d4c14781cf63419"
+};
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
