@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>인구로 보는 대한민국 — 교사용</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, onValue, set, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  // ★ Firebase 설정 — student.html과 동일한 값을 입력하세요
+  const firebaseConfig = {
+    apiKey: "AIzaSyCdbj-9BrRPXZEEzKx54V9tQE70pddpZCw",
+    authDomain: "aiteaching-2026.firebaseapp.com",
+    databaseURL: "https://aiteaching-2026-default-rtdb.firebaseio.com",
+    projectId: "aiteaching-2026",
+    storageBucket: "aiteaching-2026.firebasestorage.app",
+    messagingSenderId: "904057962716",
+    appId: "1:904057962716:web:e927f86d4c14781cf63419",
+    measurementId: "G-8HJ7YE1MT8"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  window._db = db;
+  window._ref = ref;
+  window._set = set;
+  window._update = update;
+  window._onValue = onValue;
+  window._fbReady = true;
+  document.dispatchEvent(new Event('fbReady'));
+</script>
+<style>
+:root {
+  --bg: #0d1117;
+  --surface: #161b26;
+  --surface2: #1c2236;
+  --surface3: #222840;
+  --accent: #4f8ef7;
+  --accent2: #f7c948;
+  --accent3: #5ecfa0;
+  --text: #e2e4ed;
+  --text2: #8892aa;
+  --border: #252d42;
+  --danger: #f76e6e;
+  --radius: 12px;
+  --font: 'Noto Sans KR', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* Layout */
+.layout { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+
+/* Sidebar */
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 24px 0;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+.logo {
+  padding: 0 20px 24px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+.logo-title { font-size: 14px; font-weight: 700; color: var(--accent); }
+.logo-sub { font-size: 11px; color: var(--text2); margin-top: 3px; }
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 20px;
+  font-size: 13px;
+  color: var(--text2);
+  cursor: pointer;
+  transition: all .2s;
+  border-left: 3px solid transparent;
+}
+.nav-item:hover { color: var(--text); background: var(--surface2); }
+.nav-item.active { color: var(--accent); background: rgba(79,142,247,.08); border-left-color: var(--accent); }
+.nav-icon { font-size: 16px; width: 20px; text-align: center; }
+.sidebar-section { font-size: 10px; color: var(--text2); padding: 14px 20px 6px; letter-spacing: 1px; text-transform: uppercase; }
+
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: var(--accent3);
+  background: rgba(94,207,160,.12);
+  border-radius: 20px;
+  padding: 3px 8px;
+  margin: 0 20px 16px;
+}
+.live-dot { width: 6px; height: 6px; background: var(--accent3); border-radius: 50%; animation: blink 1.2s ease-in-out infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+/* Main */
+.main { padding: 28px 32px; overflow-y: auto; }
+.page-section { display: none; }
+.page-section.active { display: block; }
+
+/* Page header */
+.page-header { margin-bottom: 24px; }
+.page-title { font-size: 20px; font-weight: 700; }
+.page-sub { font-size: 13px; color: var(--text2); margin-top: 4px; }
+
+/* Stats row */
+.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+}
+.stat-card .num { font-size: 28px; font-weight: 700; }
+.stat-card .lbl { font-size: 12px; color: var(--text2); margin-top: 4px; }
+.blue { color: var(--accent); }
+.yellow { color: var(--accent2); }
+.green { color: var(--accent3); }
+.red { color: var(--danger); }
+
+/* Student table */
+.table-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.table-title { font-size: 15px; font-weight: 700; }
+.btn-csv {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--accent3);
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 12px;
+  font-family: var(--font);
+  cursor: pointer;
+  font-weight: 500;
+  transition: all .2s;
+}
+.btn-csv:hover { background: var(--surface3); }
+
+table { width: 100%; border-collapse: collapse; }
+th {
+  background: var(--surface2);
+  padding: 10px 16px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text2);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+td {
+  padding: 12px 16px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--surface2); }
+.score-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.score-full { background: rgba(94,207,160,.15); color: var(--accent3); }
+.score-high { background: rgba(79,142,247,.15); color: var(--accent); }
+.score-mid  { background: rgba(247,201,72,.15); color: var(--accent2); }
+.score-low  { background: rgba(247,110,110,.15); color: var(--danger); }
+.no-submit  { color: var(--text2); font-size: 12px; }
+.btn-view {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text2);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: all .2s;
+}
+.btn-view:hover { color: var(--accent); border-color: var(--accent); }
+
+/* Report modal */
+.overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.7);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.overlay.open { display: flex; }
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 680px;
+  max-height: 88vh;
+  overflow-y: auto;
+  padding: 28px;
+}
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.modal-title { font-size: 17px; font-weight: 700; }
+.btn-close {
+  background: none;
+  border: none;
+  color: var(--text2);
+  font-size: 22px;
+  cursor: pointer;
+  line-height: 1;
+}
+.modal-section { margin-bottom: 18px; }
+.modal-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text2);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.modal-content {
+  background: var(--surface2);
+  border-radius: 10px;
+  padding: 14px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text);
+  white-space: pre-wrap;
+}
+.ai-box {
+  background: linear-gradient(135deg, rgba(79,142,247,.08), rgba(94,207,160,.06));
+  border: 1px solid rgba(79,142,247,.2);
+  border-radius: 10px;
+  padding: 14px;
+}
+.ai-label { font-size: 12px; font-weight: 700; color: var(--accent); margin-bottom: 8px; }
+.ai-content { font-size: 13px; color: var(--text2); line-height: 1.7; white-space: pre-wrap; }
+.teacher-edit-area {
+  width: 100%;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 13px;
+  line-height: 1.7;
+  padding: 12px 14px;
+  resize: vertical;
+  min-height: 90px;
+  transition: border-color .2s;
+}
+.teacher-edit-area:focus { outline: none; border-color: var(--accent2); }
+.modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+.btn-send {
+  flex: 1;
+  padding: 12px;
+  background: var(--accent2);
+  color: #1a1400;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: opacity .2s;
+}
+.btn-send:hover { opacity: 0.85; }
+.btn-gen-ai {
+  padding: 12px 18px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--accent);
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: all .2s;
+}
+.btn-gen-ai:hover { background: var(--surface3); }
+
+/* Empty state */
+.empty-state { text-align: center; padding: 60px 20px; color: var(--text2); }
+.empty-icon { font-size: 40px; margin-bottom: 12px; }
+.empty-text { font-size: 14px; }
+
+/* Score distribution */
+.dist-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.dist-label { width: 60px; font-size: 12px; color: var(--text2); text-align: right; flex-shrink: 0; }
+.dist-bar-wrap { flex: 1; background: var(--surface2); border-radius: 4px; height: 22px; overflow: hidden; }
+.dist-bar { height: 100%; border-radius: 4px; transition: width .6s ease; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; }
+.dist-count { font-size: 11px; font-weight: 700; color: rgba(255,255,255,.8); }
+
+@media(max-width:768px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .stats-row { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-title">📊 인구로 보는 대한민국</div>
+      <div class="logo-sub">교사용 대시보드 · 1차시</div>
+    </div>
+    <div class="live-badge"><span class="live-dot"></span>실시간 연동 중</div>
+
+    <div class="sidebar-section">현황</div>
+    <div class="nav-item active" onclick="switchPage('overview',this)">
+      <span class="nav-icon">📋</span> 전체 현황
+    </div>
+
+    <div class="sidebar-section">평가 관리</div>
+    <div class="nav-item" onclick="switchPage('quiz',this)">
+      <span class="nav-icon">📝</span> 형성평가 결과
+    </div>
+    <div class="nav-item" onclick="switchPage('reports',this)">
+      <span class="nav-icon">🔬</span> 탐구보고서 목록
+    </div>
+
+    <div class="sidebar-section">데이터</div>
+    <div class="nav-item" onclick="downloadAllCSV()">
+      <span class="nav-icon">⬇️</span> 전체 CSV 내보내기
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- OVERVIEW -->
+    <section class="page-section active" id="sec-overview">
+      <div class="page-header">
+        <div class="page-title">전체 현황</div>
+        <div class="page-sub">실시간으로 학생 제출 현황을 확인합니다.</div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-card"><div class="num blue" id="ov-total">0</div><div class="lbl">총 접속 학생</div></div>
+        <div class="stat-card"><div class="num green" id="ov-quiz">0</div><div class="lbl">형성평가 제출</div></div>
+        <div class="stat-card"><div class="num yellow" id="ov-report">0</div><div class="lbl">탐구보고서 제출</div></div>
+        <div class="stat-card"><div class="num" id="ov-avg" style="color:var(--accent3)">—</div><div class="lbl">형성평가 평균점수</div></div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <div class="table-title">학생별 제출 현황</div>
+          <button class="btn-csv" onclick="downloadAllCSV()">⬇ CSV 다운로드</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>이름</th>
+              <th>형성평가</th>
+              <th>탐구보고서</th>
+              <th>피드백 전송</th>
+              <th>보고서</th>
+            </tr>
+          </thead>
+          <tbody id="overviewTable">
+            <tr><td colspan="5"><div class="empty-state"><div class="empty-icon">⏳</div><div class="empty-text">학생 데이터를 기다리는 중입니다...</div></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 점수 분포 -->
+      <div class="table-card">
+        <div class="table-header"><div class="table-title">형성평가 점수 분포</div></div>
+        <div style="padding: 20px 24px;" id="scoreDistArea">
+          <div class="empty-state"><div class="empty-text">형성평가 제출 후 분포가 표시됩니다.</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- QUIZ -->
+    <section class="page-section" id="sec-quiz">
+      <div class="page-header">
+        <div class="page-title">형성평가 결과</div>
+        <div class="page-sub">OX 퀴즈 채점 결과 및 문항별 오답률을 확인합니다.</div>
+      </div>
+      <div class="table-card">
+        <div class="table-header">
+          <div class="table-title">학생별 점수</div>
+          <button class="btn-csv" onclick="downloadQuizCSV()">⬇ CSV</button>
+        </div>
+        <table>
+          <thead>
+            <tr><th>이름</th><th>점수</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th><th>Q5</th><th>제출 시각</th></tr>
+          </thead>
+          <tbody id="quizTable">
+            <tr><td colspan="8"><div class="empty-state"><div class="empty-text">아직 제출한 학생이 없습니다.</div></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header"><div class="table-title">문항별 정답률</div></div>
+        <div style="padding:20px 24px" id="itemAnalysisArea">
+          <div class="empty-state"><div class="empty-text">데이터 대기 중...</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- REPORTS -->
+    <section class="page-section" id="sec-reports">
+      <div class="page-header">
+        <div class="page-title">탐구보고서 목록</div>
+        <div class="page-sub">학생을 클릭하면 보고서 전문과 AI 피드백을 확인하고 교사 피드백을 전송할 수 있습니다.</div>
+      </div>
+      <div class="table-card">
+        <div class="table-header">
+          <div class="table-title">제출 목록</div>
+          <button class="btn-csv" onclick="downloadReportCSV()">⬇ CSV</button>
+        </div>
+        <table>
+          <thead>
+            <tr><th>이름</th><th>제출 시각</th><th>AI 피드백</th><th>교사 피드백</th><th>상세보기</th></tr>
+          </thead>
+          <tbody id="reportTable">
+            <tr><td colspan="5"><div class="empty-state"><div class="empty-text">아직 제출한 학생이 없습니다.</div></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Modal -->
+<div class="overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title" id="modalStudentName">학생 탐구보고서</div>
+      <button class="btn-close" onclick="closeModal()">✕</button>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-label">탐구 주제 및 문제 인식</div>
+      <div class="modal-content" id="m-r1">—</div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-label">데이터 분석 및 근거</div>
+      <div class="modal-content" id="m-r2">—</div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-label">원인 분석</div>
+      <div class="modal-content" id="m-r3">—</div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-label">해결 방안 및 나의 의견</div>
+      <div class="modal-content" id="m-r4">—</div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-label">🤖 AI 피드백</div>
+      <div class="ai-box">
+        <div class="ai-content" id="m-aiFeedback">로딩 중...</div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-label">👩‍🏫 교사 피드백 작성 (수정 후 전송)</div>
+      <textarea class="teacher-edit-area" id="m-teacherFeedback" placeholder="AI 피드백을 참고하여 교사 피드백을 작성하거나 수정하세요."></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-gen-ai" onclick="genTeacherFeedback()">🤖 AI로 초안 생성</button>
+      <button class="btn-send" onclick="sendTeacherFeedback()">📨 학생에게 피드백 전송</button>
+    </div>
+    <div id="sendStatus" style="text-align:center;font-size:12px;color:var(--accent3);margin-top:10px;display:none">✅ 전송 완료!</div>
+  </div>
+</div>
+
+<script>
+// ── 상태 ─────────────────────────────────────────────────
+let allStudents = {};
+let modalStudentId = null;
+
+const QUIZ_ANSWERS = ['O','O','X','O','X'];
+const QUIZ_QUESTIONS = [
+  '합계출산율 0.72명 인구 유지 미달',
+  '2020년 총인구 정점 → 감소 전환',
+  '고령인구 20% 이상 = 초고령사회',
+  '생산연령인구 감소 → 노년부양비 증가',
+  '기대수명 1970년 이후 꾸준히 감소'
+];
+
+// ── 네비게이션 ───────────────────────────────────────────
+function switchPage(name, el) {
+  document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('sec-' + name).classList.add('active');
+  el.classList.add('active');
+}
+
+// ── Firebase 리스너 ──────────────────────────────────────
+document.addEventListener('fbReady', () => {
+  const { _db, _ref, _onValue } = window;
+  _onValue(_ref(_db, 'class/students'), snap => {
+    allStudents = snap.val() || {};
+    renderAll();
+  });
+});
+
+function renderAll() {
+  renderOverview();
+  renderQuizTable();
+  renderReportTable();
+}
+
+// ── 전체 현황 ────────────────────────────────────────────
+function renderOverview() {
+  const ids = Object.keys(allStudents);
+  const quizDone = ids.filter(id => allStudents[id].quiz);
+  const reportDone = ids.filter(id => allStudents[id].report);
+
+  document.getElementById('ov-total').textContent = ids.length;
+  document.getElementById('ov-quiz').textContent = quizDone.length;
+  document.getElementById('ov-report').textContent = reportDone.length;
+
+  if (quizDone.length > 0) {
+    const avg = (quizDone.reduce((s, id) => s + (allStudents[id].quiz.score || 0), 0) / quizDone.length).toFixed(1);
+    document.getElementById('ov-avg').textContent = avg + ' / 5';
+  } else {
+    document.getElementById('ov-avg').textContent = '—';
+  }
+
+  // 테이블
+  const tbody = document.getElementById('overviewTable');
+  if (ids.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">⏳</div><div class="empty-text">학생 데이터를 기다리는 중입니다...</div></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = ids.map(id => {
+    const s = allStudents[id];
+    const name = s.quiz?.name || s.report?.name || '(이름 없음)';
+    const quiz = s.quiz;
+    const report = s.report;
+    const scoreHtml = quiz ? `<span class="score-badge ${scoreCls(quiz.score)}">${quiz.score} / ${quiz.total}</span>` : '<span class="no-submit">미제출</span>';
+    const reportHtml = report ? `<span style="color:var(--accent3);font-size:12px">✓ 제출완료</span>` : '<span class="no-submit">미제출</span>';
+    const feedbackHtml = report?.teacherFeedback ? '<span style="color:var(--accent2);font-size:12px">✓ 전송완료</span>' : '<span class="no-submit">미전송</span>';
+    const viewBtn = report ? `<button class="btn-view" onclick="openModal('${id}')">보기</button>` : '—';
+    return `<tr>
+      <td style="font-weight:500">${name}</td>
+      <td>${scoreHtml}</td>
+      <td>${reportHtml}</td>
+      <td>${feedbackHtml}</td>
+      <td>${viewBtn}</td>
+    </tr>`;
+  }).join('');
+
+  // 점수 분포
+  renderScoreDist(quizDone);
+}
+
+function scoreCls(s) {
+  if (s === 5) return 'score-full';
+  if (s >= 4) return 'score-high';
+  if (s >= 3) return 'score-mid';
+  return 'score-low';
+}
+
+function renderScoreDist(quizIds) {
+  const dist = [0,0,0,0,0,0]; // 0~5점
+  quizIds.forEach(id => { dist[allStudents[id].quiz.score]++; });
+  const max = Math.max(...dist, 1);
+  const colors = ['#f76e6e','#f7a068','#f7c948','#4f8ef7','#4f8ef7','#5ecfa0'];
+  const labels = ['0점','1점','2점','3점','4점','5점'];
+  const el = document.getElementById('scoreDistArea');
+  if (quizIds.length === 0) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-text">형성평가 제출 후 분포가 표시됩니다.</div></div>';
+    return;
+  }
+  el.innerHTML = dist.map((cnt, i) => `
+    <div class="dist-row">
+      <div class="dist-label">${labels[i]}</div>
+      <div class="dist-bar-wrap">
+        <div class="dist-bar" style="width:${cnt/max*100}%;background:${colors[i]}">
+          ${cnt > 0 ? `<span class="dist-count">${cnt}명</span>` : ''}
+        </div>
+      </div>
+      <div style="width:32px;font-size:12px;color:var(--text2);text-align:right">${cnt}명</div>
+    </div>
+  `).join('');
+}
+
+// ── 형성평가 테이블 ──────────────────────────────────────
+function renderQuizTable() {
+  const ids = Object.keys(allStudents).filter(id => allStudents[id].quiz);
+  const tbody = document.getElementById('quizTable');
+  if (ids.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="empty-text">아직 제출한 학생이 없습니다.</div></div></td></tr>';
+    renderItemAnalysis([]);
+    return;
+  }
+  tbody.innerHTML = ids.map(id => {
+    const q = allStudents[id].quiz;
+    const answers = q.answers || [];
+    const ansHtml = QUIZ_ANSWERS.map((correct, i) => {
+      const ua = answers[i];
+      if (!ua) return '<td style="color:var(--text2)">—</td>';
+      const ok = ua === correct;
+      return `<td style="color:${ok?'var(--accent3)':'var(--danger)'}; font-weight:700">${ua}</td>`;
+    }).join('');
+    const time = q.submittedAt ? new Date(q.submittedAt).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}) : '—';
+    return `<tr>
+      <td style="font-weight:500">${q.name || '—'}</td>
+      <td><span class="score-badge ${scoreCls(q.score)}">${q.score} / ${q.total}</span></td>
+      ${ansHtml}
+      <td style="color:var(--text2);font-size:12px">${time}</td>
+    </tr>`;
+  }).join('');
+  renderItemAnalysis(ids);
+}
+
+function renderItemAnalysis(ids) {
+  const el = document.getElementById('itemAnalysisArea');
+  if (ids.length === 0) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-text">데이터 대기 중...</div></div>';
+    return;
+  }
+  const correctCounts = QUIZ_ANSWERS.map((ans, i) => {
+    return ids.filter(id => {
+      const a = allStudents[id].quiz?.answers;
+      return a && a[i] === ans;
+    }).length;
+  });
+  const total = ids.length;
+  el.innerHTML = QUIZ_QUESTIONS.map((q, i) => {
+    const rate = total ? Math.round(correctCounts[i]/total*100) : 0;
+    const color = rate >= 80 ? 'var(--accent3)' : rate >= 60 ? 'var(--accent)' : rate >= 40 ? 'var(--accent2)' : 'var(--danger)';
+    return `<div class="dist-row" style="margin-bottom:14px">
+      <div style="width:200px;font-size:12px;color:var(--text2);flex-shrink:0">Q${i+1}. ${q}</div>
+      <div class="dist-bar-wrap">
+        <div class="dist-bar" style="width:${rate}%;background:${color}">
+          ${rate > 10 ? `<span class="dist-count">${rate}%</span>` : ''}
+        </div>
+      </div>
+      <div style="width:48px;font-size:12px;color:${color};text-align:right;font-weight:700">${rate}%</div>
+    </div>`;
+  }).join('');
+}
+
+// ── 탐구보고서 테이블 ────────────────────────────────────
+function renderReportTable() {
+  const ids = Object.keys(allStudents).filter(id => allStudents[id].report);
+  const tbody = document.getElementById('reportTable');
+  if (ids.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="empty-text">아직 제출한 학생이 없습니다.</div></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = ids.map(id => {
+    const r = allStudents[id].report;
+    const time = r.submittedAt ? new Date(r.submittedAt).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}) : '—';
+    const aiFb = r.aiFeedback ? '<span style="color:var(--accent3);font-size:12px">✓ 생성됨</span>' : '<span class="no-submit">대기 중</span>';
+    const teachFb = r.teacherFeedback ? '<span style="color:var(--accent2);font-size:12px">✓ 전송완료</span>' : '<span class="no-submit">미전송</span>';
+    return `<tr>
+      <td style="font-weight:500">${r.name || '—'}</td>
+      <td style="color:var(--text2);font-size:12px">${time}</td>
+      <td>${aiFb}</td>
+      <td>${teachFb}</td>
+      <td><button class="btn-view" onclick="openModal('${id}')">보기 / 피드백</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── 모달 ────────────────────────────────────────────────
+function openModal(id) {
+  modalStudentId = id;
+  const r = allStudents[id]?.report;
+  if (!r) return;
+  document.getElementById('modalStudentName').textContent = (r.name || '학생') + ' — 탐구보고서';
+  document.getElementById('m-r1').textContent = r.문제인식 || '—';
+  document.getElementById('m-r2').textContent = r.데이터분석 || '—';
+  document.getElementById('m-r3').textContent = r.원인분석 || '—';
+  document.getElementById('m-r4').textContent = r.해결방안 || '—';
+  document.getElementById('m-aiFeedback').textContent = r.aiFeedback || '(아직 AI 피드백이 없습니다)';
+  document.getElementById('m-teacherFeedback').value = r.teacherFeedback || r.aiFeedback || '';
+  document.getElementById('sendStatus').style.display = 'none';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('modalOverlay')) {
+    document.getElementById('modalOverlay').classList.remove('open');
+    modalStudentId = null;
+  }
+}
+
+async function genTeacherFeedback() {
+  if (!modalStudentId) return;
+  const r = allStudents[modalStudentId]?.report;
+  if (!r) return;
+  const btn = document.querySelector('.btn-gen-ai');
+  btn.textContent = '생성 중...';
+  btn.disabled = true;
+
+  const prompt = `다음은 중학교 사회 수업 '대한민국 인구 변화' 차시의 학생 탐구보고서입니다.
+
+[탐구 주제 및 문제 인식] ${r.문제인식}
+[데이터 분석 및 근거] ${r.데이터분석}
+[원인 분석] ${r.원인분석}
+[해결 방안 및 나의 의견] ${r.해결방안}
+
+담임교사가 학생에게 전달할 피드백을 150~200자 분량으로 작성해주세요.
+잘한 점을 먼저 칭찬하고, 보완할 방향을 부드럽게 제안해주세요. 반말 사용 금지, 친절하고 격려하는 톤.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.[0]?.text || '생성 실패';
+    document.getElementById('m-teacherFeedback').value = text;
+  } catch(e) {
+    alert('AI 생성 중 오류가 발생했습니다.');
+  }
+  btn.textContent = '🤖 AI로 초안 생성';
+  btn.disabled = false;
+}
+
+function sendTeacherFeedback() {
+  if (!modalStudentId || !window._fbReady) return;
+  const feedback = document.getElementById('m-teacherFeedback').value.trim();
+  if (!feedback) { alert('피드백을 작성해주세요.'); return; }
+  const { _db, _ref, _set } = window;
+  _set(_ref(_db, `class/students/${modalStudentId}/report/teacherFeedback`), feedback);
+  document.getElementById('sendStatus').style.display = 'block';
+  setTimeout(() => renderAll(), 500);
+}
+
+// ── CSV 다운로드 ─────────────────────────────────────────
+function toCSV(rows) {
+  return rows.map(r => r.map(cell => `"${String(cell||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+}
+
+function downloadCSV(filename, content) {
+  const bom = '\uFEFF';
+  const blob = new Blob([bom + content], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
+function downloadAllCSV() {
+  const ids = Object.keys(allStudents);
+  const rows = [['이름','형성평가점수','Q1','Q2','Q3','Q4','Q5','문제인식','데이터분석','원인분석','해결방안','AI피드백','교사피드백','제출시각']];
+  ids.forEach(id => {
+    const s = allStudents[id];
+    const name = s.quiz?.name || s.report?.name || '';
+    const q = s.quiz || {};
+    const r = s.report || {};
+    const ans = q.answers || [];
+    rows.push([
+      name, q.score ?? '', ...QUIZ_ANSWERS.map((_,i) => ans[i]||''),
+      r.문제인식||'', r.데이터분석||'', r.원인분석||'', r.해결방안||'',
+      r.aiFeedback||'', r.teacherFeedback||'',
+      r.submittedAt ? new Date(r.submittedAt).toLocaleString('ko-KR') : ''
+    ]);
+  });
+  downloadCSV(`인구수업_전체결과_${today()}.csv`, toCSV(rows));
+}
+
+function downloadQuizCSV() {
+  const ids = Object.keys(allStudents).filter(id => allStudents[id].quiz);
+  const rows = [['이름','점수','Q1','Q2','Q3','Q4','Q5','제출시각']];
+  ids.forEach(id => {
+    const q = allStudents[id].quiz;
+    const ans = q.answers || [];
+    rows.push([q.name||'', q.score, ...ans, q.submittedAt ? new Date(q.submittedAt).toLocaleString('ko-KR') : '']);
+  });
+  downloadCSV(`형성평가결과_${today()}.csv`, toCSV(rows));
+}
+
+function downloadReportCSV() {
+  const ids = Object.keys(allStudents).filter(id => allStudents[id].report);
+  const rows = [['이름','문제인식','데이터분석','원인분석','해결방안','AI피드백','교사피드백','제출시각']];
+  ids.forEach(id => {
+    const r = allStudents[id].report;
+    rows.push([r.name||'', r.문제인식||'', r.데이터분석||'', r.원인분석||'', r.해결방안||'', r.aiFeedback||'', r.teacherFeedback||'', r.submittedAt ? new Date(r.submittedAt).toLocaleString('ko-KR') : '']);
+  });
+  downloadCSV(`탐구보고서_${today()}.csv`, toCSV(rows));
+}
+
+function today() {
+  return new Date().toISOString().slice(0,10);
+}
+</script>
+</body>
+</html>
