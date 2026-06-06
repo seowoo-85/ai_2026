@@ -659,14 +659,6 @@
             
             if (data.error) throw new Error(data.error);
             
-            if (!text) {
-              return ContentService
-                .createTextOutput(JSON.stringify({
-                  error: raw
-                }))
-                .setMimeType(ContentService.MimeType.JSON);
-            }
-            
             aiTextarea.value = data.text.trim();
             showToast("AI 피드백 생성 완료!", "success");
         
