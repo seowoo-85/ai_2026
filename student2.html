@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>국제 이주정책 시뮬레이터 - 교사용 평가 대시보드</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap');
+        body {
+            font-family: 'Pretendard', sans-serif;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- 상단 헤더 -->
+    <header class="bg-slate-900 text-white sticky top-0 z-30 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-indigo-500 rounded-lg text-white">
+                    <i data-lucide="graduation-cap" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-tight flex items-center gap-2">
+                        이주정책 시뮬레이터 평가 시스템
+                        <span class="text-xs bg-indigo-600 text-white font-semibold px-2 py-0.5 rounded-full">교사용 대시보드</span>
+                    </h1>
+                    <p class="text-[11px] text-slate-300">학생들의 학습 과정 모니터링 및 AI 스마트 피드백 솔루션</p>
+                </div>
+            </div>
+            
+            <!-- 관리자 로그인 정보 배지 -->
+            <div class="flex items-center space-x-3 text-right">
+                <div class="hidden sm:block">
+                    <div class="text-xs text-slate-400">교사 계정 활성화됨</div>
+                    <div id="admin-uid" class="text-[10px] text-slate-500 font-mono">연결 중...</div>
+                </div>
+                <div class="w-9 h-9 bg-indigo-600 rounded-full flex items-center justify-center font-bold text-sm text-white">
+                    ADMIN
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 메인 레이아웃 -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full flex flex-col gap-6">
+        
+        <!-- 실시간 요약 현황 통계판 -->
+        <section class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                <div>
+                    <span class="text-xs text-slate-500 font-semibold block">총 제출 완료 학생</span>
+                    <span id="stat-total" class="text-3xl font-extrabold text-slate-900 mt-1 block">0명</span>
+                </div>
+                <div class="p-3.5 bg-indigo-50 text-indigo-600 rounded-xl">
+                    <i data-lucide="users" class="w-6 h-6"></i>
+                </div>
+            </div>
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                <div>
+                    <span class="text-xs text-slate-500 font-semibold block">피드백 대기중</span>
+                    <span id="stat-pending" class="text-3xl font-extrabold text-amber-600 mt-1 block">0명</span>
+                </div>
+                <div class="p-3.5 bg-amber-50 text-amber-600 rounded-xl">
+                    <i data-lucide="clock" class="w-6 h-6"></i>
+                </div>
+            </div>
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                <div>
+                    <span class="text-xs text-slate-500 font-semibold block">피드백 완료</span>
+                    <span id="stat-completed" class="text-3xl font-extrabold text-emerald-600 mt-1 block">0명</span>
+                </div>
+                <div class="p-3.5 bg-emerald-50 text-emerald-600 rounded-xl">
+                    <i data-lucide="check-circle" class="w-6 h-6"></i>
+                </div>
+            </div>
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                <div>
+                    <span class="text-xs text-slate-500 font-semibold block">평균 사회통합 예산</span>
+                    <span id="stat-avg-budget" class="text-3xl font-extrabold text-indigo-600 mt-1 block">0%</span>
+                </div>
+                <div class="p-3.5 bg-indigo-50 text-indigo-600 rounded-xl">
+                    <i data-lucide="piggy-bank" class="w-6 h-6"></i>
+                </div>
+            </div>
+        </section>
+
+        <!-- 데이터 관리 핵심 컨트롤 그리드 -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start flex-1">
+            
+            <!-- 왼쪽: 학생 제출 목록 패널 -->
+            <div class="lg:col-span-5 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[650px]">
+                <div class="p-5 border-b border-slate-200 bg-slate-50/50 flex items-center justify-between">
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-sm flex items-center gap-1.5">
+                            <i data-lucide="list" class="w-4 h-4 text-indigo-600"></i>
+                            실시간 학생 제출 리스트
+                        </h3>
+                        <p class="text-xs text-slate-400 mt-0.5">정렬: 최신 제출순</p>
+                    </div>
+                    
+                    <!-- CSV 다운로드 버튼 -->
+                    <button onclick="downloadCSV()" class="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-3 py-2 rounded-xl transition shadow-sm shadow-indigo-100">
+                        <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                        <span>전체 CSV 다운로드</span>
+                    </button>
+                </div>
+
+                <!-- 학생 필터 탭 -->
+                <div class="px-4 py-2 bg-slate-100 border-b border-slate-200 flex gap-2">
+                    <button onclick="setFilter('all')" id="filter-all" class="text-[11px] font-bold px-3 py-1 rounded-full bg-slate-800 text-white transition">전체</button>
+                    <button onclick="setFilter('pending')" id="filter-pending" class="text-[11px] font-bold px-3 py-1 rounded-full text-slate-600 bg-white hover:bg-slate-200 transition">대기중</button>
+                    <button onclick="setFilter('completed')" id="filter-completed" class="text-[11px] font-bold px-3 py-1 rounded-full text-slate-600 bg-white hover:bg-slate-200 transition">완료</button>
+                </div>
+
+                <!-- 리스트 바디 -->
+                <div id="student-list-container" class="flex-1 overflow-y-auto divide-y divide-slate-100 p-2 space-y-1">
+                    <!-- 학생 정보 카드들 동적 기입 장소 -->
+                    <div class="text-center py-20 text-slate-400 text-xs">
+                        <i data-lucide="inbox" class="w-8 h-8 mx-auto mb-2 text-slate-300"></i>
+                        아직 제출된 보고서가 없습니다.
+                    </div>
+                </div>
+            </div>
+
+            <!-- 오른쪽: 학생 성찰 평가 & AI 피드백 에디터 패널 -->
+            <div class="lg:col-span-7 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col min-h-[650px]">
+                <div class="p-5 border-b border-slate-200 bg-slate-50/50 flex items-center justify-between">
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-sm flex items-center gap-1.5">
+                            <i data-lucide="file-check" class="w-4 h-4 text-indigo-600"></i>
+                            제출 성찰 보고서 상세 검토
+                        </h3>
+                        <p class="text-xs text-slate-400 mt-0.5">시뮬레이터 변수 세팅값과 학생의 서술형 가치를 종합 분석합니다.</p>
+                    </div>
+                    <span id="detail-status-badge" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 hidden">선택 대기</span>
+                </div>
+
+                <!-- 상세 영역 본문 -->
+                <div id="detail-empty-view" class="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-400">
+                    <div class="p-4 bg-slate-50 rounded-full border border-slate-100 mb-4 animate-bounce">
+                        <i data-lucide="mouse-pointer-click" class="w-8 h-8 text-indigo-500"></i>
+                    </div>
+                    <h4 class="font-bold text-slate-800 text-sm">상세 검토할 학생을 선택해 주세요</h4>
+                    <p class="text-xs text-slate-400 mt-1 max-w-sm">왼쪽 리스트에서 학생 이름을 누르면 시뮬레이션 상세 설계 지표와 서술형 에세이 내용이 이곳에 로드됩니다.</p>
+                </div>
+
+                <div id="detail-content-view" class="hidden flex-1 p-6 space-y-6 overflow-y-auto max-h-[580px]">
+                    <!-- 학생 요약 인포 -->
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                        <div>
+                            <h4 class="text-lg font-bold text-slate-900" id="detail-student-name">김철수 학생</h4>
+                            <p class="text-xs text-slate-400 font-mono mt-0.5" id="detail-student-uid">UID: loading...</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs text-slate-400 block">제출 시각</span>
+                            <span class="text-xs font-bold text-slate-700" id="detail-submit-time">2026.06.06 14:10</span>
+                        </div>
+                    </div>
+
+                    <!-- 정책 설계 지표 요약 -->
+                    <div class="space-y-3">
+                        <h5 class="text-xs font-bold text-indigo-900 uppercase tracking-wider flex items-center gap-1">
+                            <i data-lucide="activity" class="w-3.5 h-3.5"></i> 설계한 이주 정책 변수값
+                        </h5>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-150">
+                                <span class="block text-[10px] text-slate-400">수용 한도</span>
+                                <span id="detail-var-limit" class="text-xs font-extrabold text-slate-800">50,000 명</span>
+                            </div>
+                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-150">
+                                <span class="block text-[10px] text-slate-400">사회통합 예산</span>
+                                <span id="detail-var-budget" class="text-xs font-extrabold text-indigo-600">40%</span>
+                            </div>
+                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-150">
+                                <span class="block text-[10px] text-slate-400">비자 완화 강도</span>
+                                <span id="detail-var-visa" class="text-xs font-extrabold text-slate-800">다소 엄격함</span>
+                            </div>
+                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-150">
+                                <span class="block text-[10px] text-slate-400">이주민 권리 보호</span>
+                                <span id="detail-var-settle" class="text-xs font-extrabold text-slate-800">보통</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 학생 서술형 문항 답변 검토 -->
+                    <div class="space-y-4 pt-2">
+                        <div class="bg-indigo-50/40 p-4 rounded-xl border border-indigo-100/50 space-y-1.5">
+                            <span class="text-xs font-bold text-indigo-900 flex items-center gap-1">
+                                <i data-lucide="help-circle" class="w-3.5 h-3.5"></i> Q1. 설계한 정책의 핵심 의도는 무엇인가요?
+                            </span>
+                            <p id="detail-q1" class="text-xs text-slate-700 leading-relaxed bg-white p-3 rounded-lg border border-slate-100 min-h-[50px] font-medium">
+                                -
+                            </p>
+                        </div>
+
+                        <div class="bg-indigo-50/40 p-4 rounded-xl border border-indigo-100/50 space-y-1.5">
+                            <span class="text-xs font-bold text-indigo-900 flex items-center gap-1">
+                                <i data-lucide="help-circle" class="w-3.5 h-3.5"></i> Q2. 함께 사는 공존 공동체를 이룩하기 위한 사회 구성원의 노력은?
+                            </span>
+                            <p id="detail-q2" class="text-xs text-slate-700 leading-relaxed bg-white p-3 rounded-lg border border-slate-100 min-h-[80px] font-medium">
+                                -
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- AI 피드백 & 최종 전역 전송 엔진 -->
+                    <div class="border-t border-slate-200 pt-5 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h5 class="text-xs font-bold text-indigo-900 uppercase tracking-wider flex items-center gap-1.5">
+                                <i data-lucide="sparkles" class="w-4 h-4 text-indigo-600"></i> 교사 스마트 피드백 에디터
+                            </h5>
+                            <!-- AI 초안 생성 가동 버튼 -->
+                            <button onclick="generateAIFeedback()" id="ai-generate-btn" class="flex items-center gap-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-[11px] font-bold px-3 py-2 rounded-xl transition shadow-sm">
+                                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                                <span id="ai-btn-text">AI 피드백 추천받기</span>
+                            </button>
+                        </div>
+
+                        <!-- 피드백 기입란 -->
+                        <div class="relative">
+                            <textarea id="feedback-textarea" rows="6" placeholder="학생의 답변을 읽어보시고 평가 의견 및 지도 조언을 남겨주세요. 상단의 'AI 피드백 추천받기'를 이용하면 학생의 데이터를 기반으로 완벽한 피드백 초안이 자동 작성되어 편리합니다." 
+                                      class="w-full px-4 py-3 text-xs text-slate-700 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-600 outline-none leading-relaxed transition bg-slate-50 focus:bg-white"></textarea>
+                            
+                            <!-- 피드백 실시간 글자수 안내 -->
+                            <div class="absolute bottom-2 right-3 text-[10px] text-slate-400">
+                                <span id="feedback-char-count">0</span>자 작성됨
+                            </div>
+                        </div>
+
+                        <!-- 피드백 전송 발송 패널 -->
+                        <div class="flex items-center justify-between pt-2">
+                            <p class="text-[10px] text-slate-400 max-w-xs">피드백 전송 시 학생의 대시보드 화면에 '선생님 피드백 보관함'으로 실시간 도달하여 고정됩니다.</p>
+                            <button onclick="publishFeedback()" id="publish-btn" class="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition shadow-md shadow-emerald-100">
+                                <i data-lucide="send" class="w-4 h-4"></i>
+                                <span id="publish-btn-text">학생에게 피드백 전송</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 범용 모달 알림창 -->
+    <div id="status-modal" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 text-center space-y-4 shadow-xl">
+            <div id="modal-icon" class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-xl">
+                <i data-lucide="check-circle" class="w-6 h-6"></i>
+            </div>
+            <div class="space-y-1">
+                <h3 id="modal-title" class="text-lg font-bold text-slate-900">제출 완료</h3>
+                <p id="modal-desc" class="text-xs text-slate-500">정상 처리되었습니다.</p>
+            </div>
+            <button onclick="closeModal()" class="w-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold py-2.5 rounded-xl transition">
+                확인
+            </button>
+        </div>
+    </div>
+
+    <!-- 푸터 -->
+    <footer class="bg-slate-900 border-t border-slate-800 py-6 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-xs text-slate-500">
+            &copy; 2026 국제 이주정책 시뮬레이터 교사용 통합 분석 서비스. All rights reserved.
+        </div>
+    </footer>
+
+    <!-- Firebase 및 AI 로직 모듈 -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase 설정 (Rule 1 & Rule 3 전제 준수)
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        let adminUser = null;
+        let allReports = [];          // 전체 보고서 데이터 세트
+        let filteredReports = [];     // 필터링 적용 리스트
+        let selectedReport = null;    // 현재 우측 패널 선택 리포트
+        let currentFilter = 'all';    // 필터링 기본값 ('all', 'pending', 'completed')
+
+        // 인증 로직 가동
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("인증 처리 실패:", error);
+            }
+        };
+
+        initAuth();
+
+        // 인증 상태 모니터링
+        onAuthStateChanged(auth, (user) => {
+            adminUser = user;
+            if (user) {
+                document.getElementById('admin-uid').innerText = `ID: ${user.uid}`;
+                // 학생 데이터 로드 활성화
+                loadStudentsData();
+            }
+        });
+
+        // 학생 실시간 데이터 스냅샷 연결 (Rule 1 및 Rule 2에 의거: 복잡한 쿼리 없이 전체를 로드해 JS 메모리에서 필터/정렬 처리)
+        function loadStudentsData() {
+            // Rule 1 준수하는 절대 수집경로
+            const reportsColRef = collection(db, 'artifacts', appId, 'public', 'data', 'reports');
+
+            onSnapshot(reportsColRef, (snapshot) => {
+                const loaded = [];
+                snapshot.forEach((doc) => {
+                    loaded.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+
+                // 최신 제출 시간 기준 정렬 (JS 메모리 정렬)
+                loaded.sort((a, b) => {
+                    const timeA = a.submittedAt ? new Date(a.submittedAt).getTime() : 0;
+                    const timeB = b.submittedAt ? new Date(b.submittedAt).getTime() : 0;
+                    return timeB - timeA;
+                });
+
+                allReports = loaded;
+                
+                // 전역 통계 계산 및 UI 주입
+                calculateDashboardStats();
+                
+                // 데이터 렌더링 업데이트
+                renderStudentsList();
+
+                // 현재 활성화 및 선택중인 학생 정보가 리스트에 있다면 갱신된 데이터를 뷰에 재주입
+                if (selectedReport) {
+                    const updated = allReports.find(r => r.id === selectedReport.id);
+                    if (updated) {
+                        selectStudent(updated);
+                    }
+                }
+            }, (error) => {
+                console.error("Firestore 학생 데이터 가져오기 실패:", error);
+            });
+        }
+
+        // 통계판 데이터 계산 함수
+        function calculateDashboardStats() {
+            const total = allReports.length;
+            const completed = allReports.filter(r => r.feedback && r.feedback.trim() !== "").length;
+            const pending = total - completed;
+
+            // 평균 예산 구하기
+            let totalBudget = 0;
+            allReports.forEach(r => {
+                if (r.policyVars && typeof r.policyVars.budget === 'number') {
+                    totalBudget += r.policyVars.budget;
+                }
+            });
+            const avgBudget = total > 0 ? Math.round(totalBudget / total) : 0;
+
+            document.getElementById('stat-total').innerText = `${total}명`;
+            document.getElementById('stat-pending').innerText = `${pending}명`;
+            document.getElementById('stat-completed').innerText = `${completed}명`;
+            document.getElementById('stat-avg-budget').innerText = `${avgBudget}%`;
+        }
+
+        // 학생 리스트 그리기 (필터링 기반)
+        window.renderStudentsList = function() {
+            const container = document.getElementById('student-list-container');
+            container.innerHTML = "";
+
+            if (currentFilter === 'all') {
+                filteredReports = allReports;
+            } else if (currentFilter === 'pending') {
+                filteredReports = allReports.filter(r => !r.feedback || r.feedback.trim() === "");
+            } else if (currentFilter === 'completed') {
+                filteredReports = allReports.filter(r => r.feedback && r.feedback.trim() !== "");
+            }
+
+            if (filteredReports.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-20 text-slate-400 text-xs">
+                        <i data-lucide="inbox" class="w-8 h-8 mx-auto mb-2 text-slate-300"></i>
+                        해당 항목에 해당하는 학생이 없습니다.
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            filteredReports.forEach(report => {
+                const hasFeedback = report.feedback && report.feedback.trim() !== "";
+                const isSelected = selectedReport && selectedReport.id === report.id;
+                
+                const card = document.createElement('div');
+                card.className = `p-4 rounded-xl cursor-pointer border transition duration-200 ${
+                    isSelected 
+                    ? 'bg-indigo-50 border-indigo-200 shadow-sm' 
+                    : 'bg-white border-slate-100 hover:border-slate-300 hover:bg-slate-50/50'
+                }`;
+
+                // 이벤트 핸들러 바인딩
+                card.onclick = () => selectStudent(report);
+
+                const limitVal = report.policyVars?.limit ? report.policyVars.limit.toLocaleString() : '미조정';
+                const budgetVal = report.policyVars?.budget ? `${report.policyVars.budget}%` : '미조정';
+
+                // 카드 HTML 구조
+                card.innerHTML = `
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center space-x-2">
+                            <span class="font-bold text-slate-800 text-sm">${report.studentName || '이름 미설정'}</span>
+                            <span class="text-[10px] text-slate-400 font-mono">(${report.id.substring(0, 6)}...)</span>
+                        </div>
+                        <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                            hasFeedback 
+                            ? 'bg-emerald-100 text-emerald-800' 
+                            : 'bg-amber-100 text-amber-800'
+                        }">
+                            ${hasFeedback ? '피드백 완료' : '대기 중'}
+                        </span>
+                    </div>
+                    
+                    <div class="flex justify-between items-center text-[10px] text-slate-500">
+                        <span class="flex items-center gap-0.5">
+                            <i data-lucide="sliders" class="w-3 h-3 text-slate-400"></i>
+                            한도: ${limitVal} / 예산: ${budgetVal}
+                        </span>
+                        <span class="text-slate-400">${formatDate(report.submittedAt)}</span>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            lucide.createIcons();
+        };
+
+        // 특정 학생 선택 시 우측 상세 패널 세팅
+        window.selectStudent = function(report) {
+            selectedReport = report;
+            
+            // UI 변경 활성화
+            document.getElementById('detail-empty-view').classList.add('hidden');
+            document.getElementById('detail-content-view').classList.remove('hidden');
+
+            const hasFeedback = report.feedback && report.feedback.trim() !== "";
+            const statusBadge = document.getElementById('detail-status-badge');
+            statusBadge.classList.remove('hidden');
+            if (hasFeedback) {
+                statusBadge.innerText = "피드백 완료";
+                statusBadge.className = "text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800";
+            } else {
+                statusBadge.innerText = "대기 중";
+                statusBadge.className = "text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800";
+            }
+
+            // 학생 개인 상세정보 기입
+            document.getElementById('detail-student-name').innerText = `${report.studentName || '이름 미설정'} 학생`;
+            document.getElementById('detail-student-uid').innerText = `고유 UID: ${report.id}`;
+            document.getElementById('detail-submit-time').innerText = formatDate(report.submittedAt);
+
+            // 정책 지표 바인딩
+            const limit = report.policyVars?.limit || 0;
+            const budget = report.policyVars?.budget || 0;
+            const visa = report.policyVars?.visa || 1;
+            const settle = report.policyVars?.settle || 1;
+
+            document.getElementById('detail-var-limit').innerText = `${limit.toLocaleString()} 명`;
+            document.getElementById('detail-var-budget').innerText = `${budget}%`;
+
+            const visaLabels = { 1: '엄격함', 2: '다소 엄격함', 3: '보통', 4: '조금 완화', 5: '대폭 완화' };
+            document.getElementById('detail-var-visa').innerText = visaLabels[visa] || '보통';
+
+            const settleLabels = { 1: '최소 지원', 2: '중간 수준', 3: '완벽 보장' };
+            document.getElementById('detail-var-settle').innerText = settleLabels[settle] || '중간';
+
+            // 질문 답변 바인딩
+            document.getElementById('detail-q1').innerText = report.q1 || '(미작성)';
+            document.getElementById('detail-q2').innerText = report.q2 || '(미작성)';
+
+            // 피드백 텍스트 기입
+            const textarea = document.getElementById('feedback-textarea');
+            textarea.value = report.feedback || "";
+            document.getElementById('feedback-char-count').innerText = textarea.value.length;
+
+            // 왼쪽 탭에서 선택 하이라이트 유지용 그리기
+            renderStudentsList();
+        };
+
+        // 실시간 글자수 모니터링 이벤트
+        document.getElementById('feedback-textarea').addEventListener('input', function() {
+            document.getElementById('feedback-char-count').innerText = this.value.length;
+        });
+
+        // 필터링 변경
+        window.setFilter = function(filterType) {
+            currentFilter = filterType;
+            
+            // 버튼 상태 클래스 교정
+            document.querySelectorAll('.px-3.py-1.rounded-full').forEach(btn => {
+                btn.className = "text-[11px] font-bold px-3 py-1 rounded-full text-slate-600 bg-white hover:bg-slate-200 transition";
+            });
+            
+            const activeBtn = document.getElementById(`filter-${filterType}`);
+            activeBtn.className = "text-[11px] font-bold px-3 py-1 rounded-full bg-slate-800 text-white transition";
+
+            renderStudentsList();
+        };
+
+        // 학생에게 최종 피드백 전송하기
+        window.publishFeedback = async function() {
+            if (!adminUser) {
+                openModal("오류", "선생님 인증 세션이 만료되었습니다. 다시 로그인해 주세요.", false);
+                return;
+            }
+
+            if (!selectedReport) {
+                openModal("오류", "피드백을 작성할 대상을 먼저 지정해 주세요.", false);
+                return;
+            }
+
+            const feedbackText = document.getElementById('feedback-textarea').value;
+
+            if (!feedbackText.trim()) {
+                openModal("안내", "학생에게 보낼 피드백 메시지를 먼저 기입해주세요.", false);
+                return;
+            }
+
+            // 전송 처리 로딩 표시
+            const pBtn = document.getElementById('publish-btn');
+            const pBtnText = document.getElementById('publish-btn-text');
+            pBtn.disabled = true;
+            pBtnText.innerText = "전송 중...";
+
+            try {
+                // Rule 1 경로 타겟 문서 직접 가리켜서 업데이트 수행
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'reports', selectedReport.id);
+                
+                await updateDoc(docRef, {
+                    feedback: feedbackText.trim(),
+                    feedbackAt: new Date().toISOString()
+                });
+
+                openModal("피드백 전송 완료", `${selectedReport.studentName} 학생의 보고서 보관함으로 피드백이 실시간 발송되었습니다!`);
+            } catch (error) {
+                console.error("피드백 업데이트 오류 발생:", error);
+                openModal("전송 실패", "데이터베이스 저장 중 문제가 발생했습니다.", false);
+            } finally {
+                pBtn.disabled = false;
+                pBtnText.innerText = "학생에게 피드백 전송";
+            }
+        };
+
+        // Gemini API 연동 AI 피드백 자동 작성 서비스 (Exponential Backoff 탑재)
+        window.generateAIFeedback = async function() {
+            if (!selectedReport) {
+                openModal("안내", "선택된 학생이 없어 분석을 시작할 수 없습니다.", false);
+                return;
+            }
+
+            const report = selectedReport;
+            const apiKey = ""; // API Key 제공 환경 연결 변수
+
+            const btn = document.getElementById('ai-generate-btn');
+            const btnText = document.getElementById('ai-btn-text');
+            
+            // 로딩 상태 변환
+            btn.disabled = true;
+            btnText.innerText = "AI 분석 및 초안 생성 중...";
+
+            // AI 질의 프롬프트 구성
+            const promptMsg = `
+                당신은 '국제 이주정책 시뮬레이터' 수업을 지도하는 고등학교 지리 및 다문화 교육 전담 교사입니다.
+                다음 이주 정책 보고서를 제출한 학생에 대한 맞춤형 분석 평가와 따뜻한 조언을 담은 피드백 초안을 정성껏 써주세요.
+
+                [학생 인적 사항]
+                - 이름: ${report.studentName || '이름 미설정'}
+
+                [시뮬레이션 가동 설정 수치]
+                - 이주민 유입 한도: ${report.policyVars?.limit?.toLocaleString() || 0} 명
+                - 사회통합 소요 예산: ${report.policyVars?.budget || 0} %
+                - 비자 발급 조건 완화 수준: 단계 ${report.policyVars?.visa || 1}/5
+                - 이주민 인권/정착 보호 강도: 단계 ${report.policyVars?.settle || 1}/3
+
+                [학생 서술형 성찰 본문]
+                - 문항 1. 설계한 정책의 핵심 의도:
+                  "${report.q1 || '미작성'}"
+                - 문항 2. 선주민과 이주민이 공존하는 '함께 사는 공동체'를 위해 우리 사회가 기울여야 할 조치에 대한 생각:
+                  "${report.q2 || '미작성'}"
+
+                [작성 가이드라인]
+                1. 친절하고 신뢰감 주는 고등학교 교사 말투(~했군요, ~를 보입니다, 지지합니다)를 유지해 주세요.
+                2. 학생이 입력한 시뮬레이터 수치 조합에 대한 직관적인 비평을 가미해 주세요. (예: "이주민 한도를 높이면서도 사회적 갈등을 줄이기 위해 예산을 균형감 있게 배치한 점이 훌륭해요" 또는 "예산 비중이 다소 소극적인 점은 선주민과의 오해를 낳을 수 있으니 앞으로도 정책의 균형점을 계속해서 성찰하길 바랍니다" 등)
+                3. 학생의 문항 1, 2 에세이 속에 담긴 인권 감수성 및 다문화 다원 가치 지향점을 진정성 있게 칭찬하고, 생각을 조금 더 숙성시킬 수 있는 흥미로운 세계 시민 교육 질문을 한 가지 더 제안해 주세요.
+                4. 전체 줄글은 300~500자 분량으로 가독성 좋고 따뜻한 한글 문장으로 구성해 주십시오. 완성된 피드백 텍스트만 출력하세요.
+            `;
+
+            // API 호출 처리 (Exponential backoff 5회 구현)
+            const fetchWithRetry = async (url, options, retries = 5, delay = 1000) => {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return await response.json();
+                } catch (error) {
+                    if (retries > 0) {
+                        // Exponential backoff
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        return fetchWithRetry(url, options, retries - 1, delay * 2);
+                    } else {
+                        throw error;
+                    }
+                }
+            };
+
+            const payload = {
+                contents: [{
+                    parts: [{ text: promptMsg }]
+                }],
+                systemInstruction: {
+                    parts: [{ text: "너는 우수한 지리 교사로서 학생을 따뜻하게 격려하고 건설적인 대안을 풍부하게 제안하는 교육용 챗봇이다. 결과물은 정중하고 세련된 한글로만 도출해라." }]
+                }
+            };
+
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                const result = await fetchWithRetry(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const aiText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (aiText) {
+                    const textarea = document.getElementById('feedback-textarea');
+                    textarea.value = aiText.trim();
+                    document.getElementById('feedback-char-count').innerText = textarea.value.length;
+                    openModal("AI 피드백 추천 성공", "학생의 데이터 분석을 기반으로 맞춤형 교사 피드백 추천서가 하단에 동적 생성되었습니다. 내용을 다듬어 학생에게 발송해 보세요!");
+                } else {
+                    throw new Error("API 응답 내 분석 텍스트 부재");
+                }
+            } catch (err) {
+                console.error("AI 생성 실패:", err);
+                openModal("AI 분석 실패", "현재 네트워크 상황이 원활하지 않아 분석을 완료하지 못했습니다. 잠시 후 재생성 버튼을 다시 이용해 주세요.", false);
+            } finally {
+                btn.disabled = false;
+                btnText.innerText = "AI 피드백 추천받기";
+            }
+        };
+
+        // 수집된 학생 데이터를 엑셀/CSV 규격 다운로드 수행 함수
+        window.downloadCSV = function() {
+            if (allReports.length === 0) {
+                openModal("알림", "다운로드할 학생 제출 데이터가 아직 수집되지 않았습니다.", false);
+                return;
+            }
+
+            // CSV 헤더 정의
+            const headers = [
+                '학생 고유 ID (UID)',
+                '학생 성명',
+                '이주민 연간 수용 한도 (명)',
+                '사회 통합 예산 지원율 (%)',
+                '비자 완화 수준',
+                '이주민 권리 보호 강도',
+                '성찰 Q1 (정책 핵심 의도)',
+                '성찰 Q2 (공존을 위한 구성원의 노력)',
+                '최종 제출 날짜',
+                '피드백 발송 상태',
+                '선생님 피드백 의견 본문'
+            ];
+
+            // CSV 로우 조립
+            const rows = allReports.map(report => {
+                const visaLabels = { 1: '엄격함', 2: '다소 엄격함', 3: '보통', 4: '조금 완화', 5: '대폭 완화' };
+                const settleLabels = { 1: '최소 지원', 2: '중간 수준', 3: '완벽 보장' };
+                
+                return [
+                    report.id,
+                    report.studentName || '이름 미설정',
+                    report.policyVars?.limit || 0,
+                    report.policyVars?.budget || 0,
+                    visaLabels[report.policyVars?.visa] || '보통',
+                    settleLabels[report.policyVars?.settle] || '중간',
+                    escapeCSV(report.q1 || ''),
+                    escapeCSV(report.q2 || ''),
+                    formatDate(report.submittedAt),
+                    report.feedback ? '피드백 발송완료' : '피드백 대기중',
+                    escapeCSV(report.feedback || '')
+                ];
+            });
+
+            // CSV 문자열로 취합
+            let csvContent = headers.join(',') + '\n';
+            rows.forEach(row => {
+                csvContent += row.join(',') + '\n';
+            });
+
+            // 한글 안 깨지게 UTF-8 BOM 헤더 주입 처리
+            const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `이주정책_시뮬레이션_학생제출데이터_결과집계_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+
+        // CSV 문자열 예외 처리 헬퍼 함수
+        function escapeCSV(text) {
+            if (!text) return '""';
+            let escaped = text.toString().replace(/"/g, '""'); // 쌍따옴표 이중 치환
+            escaped = escaped.replace(/\n/g, ' ');           // 줄바꿈 공백 치환
+            escaped = escaped.replace(/\r/g, ' ');
+            return `"${escaped}"`;                             // 최종 따옴표 래핑
+        }
+
+        // 날짜 가독성 교정용 포맷 함수
+        function formatDate(isoString) {
+            if (!isoString) return "-";
+            try {
+                const d = new Date(isoString);
+                const pad = (n) => n.toString().padStart(2, '0');
+                return `${d.getFullYear()}.${pad(d.getMonth()+1)}.${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            } catch (e) {
+                return isoString;
+            }
+        }
+    </script>
+
+    <!-- 모달 등 기본 UI 보조 스크립트 -->
+    <script>
+        function openModal(title, desc, isSuccess = true) {
+            const icon = document.getElementById('modal-icon');
+            if (isSuccess) {
+                icon.className = "w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-xl";
+                icon.innerHTML = '<i data-lucide="check-circle" class="w-6 h-6"></i>';
+            } else {
+                icon.className = "w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto text-xl";
+                icon.innerHTML = '<i data-lucide="alert-triangle" class="w-6 h-6"></i>';
+            }
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-desc').innerText = desc;
+            document.getElementById('status-modal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeModal() {
+            document.getElementById('status-modal').classList.add('hidden');
+        }
+
+        window.onload = function() {
+            lucide.createIcons();
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EduAI 교사용 피드백 대시보드</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts (Noto Sans KR) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+    }
+    /* 스크롤바 커스텀 */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col overflow-x-hidden">
+
+  <!-- 토스트 알림창 Container -->
+  <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- 헤더 바 -->
+  <header class="border-b border-slate-800 bg-slate-950/80 backdrop-blur-md sticky top-0 z-10 px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div class="flex items-center space-x-3">
+      <div class="bg-indigo-600 p-2.5 rounded-xl shadow-lg shadow-indigo-600/30">
+        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+          EduAI <span class="text-xs bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-2 py-0.5 rounded-full font-mono">Teacher Dashboard</span>
+        </h1>
+        <p class="text-xs text-slate-400">Gemini 2.5 Flash 연동형 학생 서술형 피드백 도구 (HTML 버전)</p>
+      </div>
+    </div>
+
+    <!-- API Key 입력 영역 -->
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-slate-900 border border-slate-800 p-2 rounded-xl max-w-md w-full ml-auto">
+      <div class="flex items-center space-x-1 px-2 text-xs text-slate-400 shrink-0">
+        <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+        </svg>
+        <span>Gemini API Key:</span>
+      </div>
+      <input
+        type="password"
+        id="api-key-input"
+        placeholder="AI 키 입력 (API 피드백 활성화)"
+        class="bg-slate-950 border border-slate-800 px-3 py-1.5 rounded-lg text-xs font-mono text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 w-full"
+      />
+    </div>
+  </header>
+
+  <!-- 메인 레이아웃 -->
+  <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+    
+    <!-- 1. 좌측 사이드바: 학생 리스트 및 대시보드 현황 -->
+    <aside class="w-full lg:w-80 border-b lg:border-b-0 lg:border-r border-slate-800 bg-slate-950/40 p-5 flex flex-col shrink-0 gap-6">
+      
+      <!-- 현황 요약 카드 -->
+      <div class="grid grid-cols-2 gap-3">
+        <div class="bg-slate-900/60 border border-slate-800 p-3 rounded-xl">
+          <span class="text-[11px] text-slate-400 uppercase tracking-wider block">총 제출 인원</span>
+          <span id="summary-total" class="text-xl font-bold text-white">0명</span>
+        </div>
+        <div class="bg-slate-900/60 border border-slate-800 p-3 rounded-xl">
+          <span class="text-[11px] text-slate-400 uppercase tracking-wider block">피드백 완료</span>
+          <span id="summary-completed" class="text-xl font-bold text-indigo-400">0명</span>
+        </div>
+      </div>
+
+      <!-- 학생 리스트 영역 -->
+      <div>
+        <div class="flex items-center justify-between mb-3 px-1">
+          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">제출된 답안 목록</span>
+          <span class="text-[11px] text-indigo-400 font-semibold bg-indigo-500/10 px-2 py-0.5 rounded-full">
+            목록 클릭시 상세조회
+          </span>
+        </div>
+        
+        <div id="student-list" class="space-y-2 max-h-[250px] lg:max-h-[500px] overflow-y-auto pr-1">
+          <!-- 학생 목록이 JS에 의해 빌드되는 위치 -->
+        </div>
+      </div>
+
+      <!-- AI 프롬프트 설정 영역 -->
+      <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-xl space-y-4">
+        <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+          <span>🎯</span> AI 평가 세부 설정
+        </h3>
+        
+        <!-- 학년 수준 설정 -->
+        <div>
+          <label class="text-[11px] text-slate-400 block mb-1">지도 타겟 수준</label>
+          <select id="setting-grade" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+            <option value="elementary">초등학생 수준 (쉽고 격려하는 표현)</option>
+            <option value="middle" selected>중학생 수준 (논리적 기초 중심)</option>
+            <option value="high">고등학생 수준 (대입/정밀 평가 수준)</option>
+          </select>
+        </div>
+
+        <!-- 피드백 말투 설정 -->
+        <div>
+          <label class="text-[11px] text-slate-400 block mb-1">피드백 어조</label>
+          <select id="setting-tone" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+            <option value="warm" selected>따뜻하고 친근한 격려형</option>
+            <option value="analytical">객관적인 데이터 분석형</option>
+            <option value="strict">발전을 위한 엄격 조언형</option>
+          </select>
+        </div>
+
+        <!-- 집중 평가 영역 -->
+        <div>
+          <label class="text-[11px] text-slate-400 block mb-1">집중 분석 포인트</label>
+          <select id="setting-focus" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+            <option value="all" selected>종합 평가 (구조 + 논리 + 어휘)</option>
+            <option value="structure">단락 구조 및 문맥 흐름</option>
+            <option value="logic">논거 타당성 및 설득력</option>
+            <option value="spelling">맞춤법 및 고유 문장 표현</option>
+          </select>
+        </div>
+
+        <!-- 추가 프롬프트 요구사항 -->
+        <div>
+          <label class="text-[11px] text-slate-400 block mb-1">교사의 추가 지시어 (선택)</label>
+          <textarea
+            id="setting-custom"
+            placeholder="예: 사투리 사용을 지적해 줘, 3문단 분량으로 써 줘"
+            rows="2"
+            class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-300 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none"
+          ></textarea>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 2. 중앙 & 우측: 선택된 학생 제출물 상세 및 피드백 패널 -->
+    <main class="flex-1 overflow-y-auto p-6 space-y-6">
+      
+      <!-- 학생 제출 세부사항 -->
+      <div class="bg-slate-950/30 border border-slate-800 rounded-2xl p-6 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-slate-800 gap-4">
+          <div>
+            <span id="student-subject" class="text-xs text-indigo-400 font-semibold uppercase"></span>
+            <h2 id="student-title" class="text-xl font-bold text-white mt-1"></h2>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 flex items-center gap-4 text-xs">
+            <div>
+              <span class="text-slate-400 block text-[10px]">작성 학생</span>
+              <span id="student-info" class="font-bold text-slate-200"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 에세이 내용 뷰어 -->
+        <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-5 relative overflow-hidden">
+          <span class="absolute top-3 right-4 text-[10px] text-slate-500 uppercase tracking-widest font-mono">Student Answer</span>
+          <div id="student-content" class="text-slate-200 text-sm leading-relaxed whitespace-pre-wrap pt-4"></div>
+        </div>
+      </div>
+
+      <!-- AI 피드백 생성 및 교사용 에디터 영역 -->
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        
+        <!-- AI 피드백 실행 및 가이드 라인 -->
+        <div class="bg-slate-950/30 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between space-y-4">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-bold text-base text-white flex items-center gap-2">
+                <span class="text-indigo-500">✨</span> Gemini AI 피드백 엔진
+              </h3>
+              <span class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded">Model: 2.5 Flash</span>
+            </div>
+            
+            <p class="text-xs text-slate-400 leading-relaxed mb-4">
+              설정한 평가 세부 지침을 토대로 Gemini API에 학생 본문을 전송하여 논리 구조와 장단점을 분석합니다. 
+              우측의 API Key가 비어 있으면 데모 시뮬레이션으로 테스트하실 수 있습니다.
+            </p>
+
+            <!-- 에러 로그 컴포넌트 -->
+            <div id="api-error-box" class="hidden bg-rose-950/40 border border-rose-800 p-3 rounded-lg text-xs text-rose-300 flex items-start gap-2 mb-4">
+              <span>⚠️</span>
+              <p id="api-error-msg"></p>
+            </div>
+          </div>
+
+          <!-- 실행 제어 버튼 -->
+          <div class="flex flex-col sm:flex-row gap-2">
+            <button
+              type="button"
+              id="btn-run-api"
+              class="flex-1 flex items-center justify-center space-x-2 py-3.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-indigo-950/50"
+            >
+              <!-- 로더와 기본 아이콘 구조 -->
+              <span id="btn-api-loader" class="hidden w-5 h-5 border-2 border-slate-500 border-t-white rounded-full animate-spin"></span>
+              <svg id="btn-api-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <span id="btn-api-text">Gemini API 피드백 실행</span>
+            </button>
+
+            <button
+              type="button"
+              id="btn-run-demo"
+              class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium text-xs px-4 py-3.5 rounded-xl transition shrink-0"
+            >
+              데모 분석 생성
+            </button>
+          </div>
+        </div>
+
+        <!-- 교사용 검토 및 최종 피드백 편집기 -->
+        <div class="bg-slate-950/30 border border-slate-800 rounded-2xl p-6 space-y-4">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-800/50">
+            <h3 class="font-bold text-base text-white flex items-center gap-2">
+              <span>📝</span> 교사 검토 및 채점 수정
+            </h3>
+            <span class="text-xs text-slate-400">교사가 직접 최종 윤문을 거쳐 전송합니다.</span>
+          </div>
+
+          <!-- 점수 설정 영역 -->
+          <div class="flex items-center gap-4 bg-slate-900/40 border border-slate-800 p-3 rounded-xl">
+            <span class="text-xs font-semibold text-slate-300">종합 평가 점수:</span>
+            <input
+              type="number"
+              id="editor-score"
+              min="0"
+              max="100"
+              class="w-16 bg-slate-950 border border-slate-800 text-center font-bold text-indigo-400 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            />
+            <span class="text-xs text-slate-500">점 (100점 만점 기준)</span>
+          </div>
+
+          <!-- 피드백 텍스트 필드 -->
+          <div>
+            <label class="text-xs text-slate-400 block mb-1">최종 발행될 피드백 코멘트</label>
+            <textarea
+              id="editor-feedback"
+              placeholder="AI 피드백 버튼을 누르거나 직접 학생에게 남길 정성스런 격려의 한마디를 적어주세요."
+              rows="7"
+              class="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 leading-relaxed"
+            ></textarea>
+          </div>
+
+          <button
+            type="button"
+            id="btn-save-feedback"
+            class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm py-3 px-4 rounded-xl transition shadow-lg shadow-emerald-950/50 flex items-center justify-center gap-2"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+            </svg>
+            <span>이 학생의 성적표 및 피드백 최종 발행</span>
+          </button>
+        </div>
+
+      </div>
+
+    </main>
+  </div>
+
+  <!-- 비즈니스 로직 스크립트 -->
+  <script>
+    // ==========================================
+    // 1. 초기 상태 데이터
+    // ==========================================
+    let state = {
+      students: [
+        {
+          id: 's1',
+          name: '김민지',
+          grade: '초등학교 6학년',
+          title: '기후 변화를 막기 위한 우리들의 다짐',
+          content: '요즘 지구가 너무 뜨거워지고 있습니다. 북극곰들이 살 곳을 잃어버리고 바다의 온도가 올라가서 태풍도 더 자주 일어난다고 합니다. 우리는 쓰레기를 줄이고 분리배출을 잘 해야 합니다. 그리고 가까운 거리는 걸어 다니고 플라스틱 컵 대신 텀블러를 사용하면 좋겠습니다. 작은 실천이 모이면 큰 기적을 만들 수 있습니다. 우리 모두 지구를 살리기 위해 지금 당장 실천해 보아요!',
+          status: 'pending',
+          feedback: '',
+          score: null,
+          subject: '국어 - 주장하는 글쓰기'
+        },
+        {
+          id: 's2',
+          name: '이준우',
+          grade: '중학교 2학년',
+          title: '인공지능(AI)과 인류의 일자리 미래',
+          content: '인공지능의 발전은 우리의 삶을 획기적으로 바꿀 것입니다. 하지만 많은 사람들이 일자리를 잃을까 봐 걱정하고 있습니다. 제 생각에 단순 반복적인 일자리는 AI가 대체하겠지만, 예술이나 기획, 사람의 감정을 다루는 일자리는 여전히 인간의 영역으로 남을 것입니다. 따라서 우리는 AI와 경쟁하기보다는 AI를 잘 다루는 코딩 기술이나 창의적 사고를 길러야 합니다. 미래를 두려워하지 않고 준비하는 자세가 중요합니다.',
+          status: 'pending',
+          feedback: '',
+          score: null,
+          subject: '사회 - 미래 기술과 삶'
+        },
+        {
+          id: 's3',
+          name: '박서연',
+          grade: '고등학교 1학년',
+          title: '지역 전통시장 활성화를 위한 마케팅 제안',
+          content: '대형마트와 온라인 쇼핑몰의 급성장으로 인해 지역 전통시장이 큰 어려움을 겪고 있습니다. 전통시장을 살리기 위해서는 단순히 온누리 상품권을 발행하는 것을 넘어 트렌디한 변화가 필요합니다. 첫째, 2030 세대를 겨냥한 이색 먹거리 야시장을 개설하고 인스타그램 등 SNS 홍보를 강화해야 합니다. 둘째, 노후화된 환경을 개선하고 모바일 결제와 배달 서비스를 연동해야 합니다. 전통시장은 단순한 상업 공간이 아닌 지역의 문화 공간이므로 이를 보존하고 발전시키는 것이 지역 경제 활성화의 열쇠입니다.',
+          status: 'completed',
+          feedback: '전통시장의 구체적인 개선 방향성과 마케팅 방안을 현실성 있게 제시한 점이 돋보입니다. 논리적 흐름이 매끄럽고 서론, 본론, 결론의 구조가 명확합니다. 모바일 앱 연동 같은 구체적인 기술적 제안이 추가된 점이 아주 우수합니다.',
+          score: 95,
+          subject: '융합 - 지역 사회 문제 해결'
+        }
+      ],
+      selectedStudentId: 's1',
+      apiKey: '',
+      isLoading: false
+    };
+
+    // ==========================================
+    // 2. DOM 요소 맵핑
+    // ==========================================
+    const elements = {
+      apiKeyInput: document.getElementById('api-key-input'),
+      summaryTotal: document.getElementById('summary-total'),
+      summaryCompleted: document.getElementById('summary-completed'),
+      studentList: document.getElementById('student-list'),
+      
+      studentSubject: document.getElementById('student-subject'),
+      studentTitle: document.getElementById('student-title'),
+      studentInfo: document.getElementById('student-info'),
+      studentContent: document.getElementById('student-content'),
+      
+      settingGrade: document.getElementById('setting-grade'),
+      settingTone: document.getElementById('setting-tone'),
+      settingFocus: document.getElementById('setting-focus'),
+      settingCustom: document.getElementById('setting-custom'),
+      
+      apiErrorBox: document.getElementById('api-error-box'),
+      apiErrorMsg: document.getElementById('api-error-msg'),
+      
+      btnRunApi: document.getElementById('btn-run-api'),
+      btnApiLoader: document.getElementById('btn-api-loader'),
+      btnApiIcon: document.getElementById('btn-api-icon'),
+      btnApiText: document.getElementById('btn-api-text'),
+      btnRunDemo: document.getElementById('btn-run-demo'),
+      
+      editorScore: document.getElementById('editor-score'),
+      editorFeedback: document.getElementById('editor-feedback'),
+      btnSaveFeedback: document.getElementById('btn-save-feedback')
+    };
+
+    // ==========================================
+    // 3. 유틸리티 (알림 토스트 기능)
+    // ==========================================
+    function showNotification(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      
+      const isError = type === 'error';
+      toast.className = `px-5 py-3 rounded-xl shadow-2xl transition-all duration-300 transform translate-y-2 opacity-0 flex items-center space-x-3 border pointer-events-auto ${
+        isError 
+          ? 'bg-rose-950/95 border-rose-500/50 text-rose-200' 
+          : 'bg-emerald-950/95 border-emerald-500/50 text-emerald-200'
+      }`;
+      
+      toast.innerHTML = `
+        <span>${isError ? '⚠️' : '✨'}</span>
+        <p class="font-medium text-sm">${message}</p>
+      `;
+
+      container.appendChild(toast);
+
+      // 브라우저 렌더 레이턴시 극복용 매크로태스크 처리
+      setTimeout(() => {
+        toast.classList.remove('opacity-0', 'translate-y-2');
+      }, 50);
+
+      // 3초 후 토스트 제거
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // ==========================================
+    // 4. 컴포넌트 렌더러 함수들
+    // ==========================================
+    
+    // 현황 요약 정보 동기화
+    function renderSummary() {
+      elements.summaryTotal.textContent = `${state.students.length}명`;
+      const completedCount = state.students.filter(s => s.status === 'completed').length;
+      elements.summaryCompleted.textContent = `${completedCount}명`;
+    }
+
+    // 학생 목록 렌더링
+    function renderStudentList() {
+      elements.studentList.innerHTML = '';
+      
+      state.students.forEach(student => {
+        const isSelected = student.id === state.selectedStudentId;
+        const btn = document.createElement('button');
+        
+        btn.className = `w-full text-left p-3.5 rounded-xl border transition-all duration-200 flex flex-col gap-2 ${
+          isSelected
+            ? 'bg-indigo-600/10 border-indigo-500 shadow-md shadow-indigo-950/40'
+            : 'bg-slate-900/50 border-slate-800 hover:border-slate-700 hover:bg-slate-900'
+        }`;
+
+        const isCompleted = student.status === 'completed';
+        const badgeStyle = isCompleted 
+          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+          : 'bg-amber-500/10 text-amber-400 border border-amber-500/20';
+        const badgeText = isCompleted ? '완료됨' : '대기중';
+
+        btn.innerHTML = `
+          <div class="flex items-center justify-between w-full">
+            <div class="flex items-center space-x-2">
+              <span class="w-2 h-2 rounded-full ${isSelected ? 'bg-indigo-400' : 'bg-slate-600'}"></span>
+              <span class="font-bold text-sm text-slate-100">${student.name}</span>
+            </div>
+            <span class="text-[10px] px-2 py-0.5 rounded-full font-medium ${badgeStyle}">
+              ${badgeText}
+            </span>
+          </div>
+          <div class="text-xs text-slate-300 line-clamp-1">${student.title}</div>
+          <div class="flex items-center justify-between text-[11px] text-slate-500">
+            <span>${student.grade}</span>
+            ${student.score ? `<span class="font-bold text-indigo-300">${student.score}점</span>` : ''}
+          </div>
+        `;
+
+        btn.addEventListener('click', () => {
+          if (state.isLoading) return; // 로딩 중에는 클릭 방지
+          state.selectedStudentId = student.id;
+          renderStudentList();
+          renderStudentDetail();
+        });
+
+        elements.studentList.appendChild(btn);
+      });
+    }
+
+    // 학생 상세 뷰 및 에디터 렌더링
+    function renderStudentDetail() {
+      const currentStudent = state.students.find(s => s.id === state.selectedStudentId) || state.students[0];
+      if (!currentStudent) return;
+
+      elements.studentSubject.textContent = currentStudent.subject;
+      elements.studentTitle.textContent = currentStudent.title;
+      elements.studentInfo.textContent = `${currentStudent.name} (${currentStudent.grade})`;
+      elements.studentContent.textContent = currentStudent.content;
+
+      // 에디터 폼 값 채우기
+      elements.editorFeedback.value = currentStudent.feedback || '';
+      elements.editorScore.value = currentStudent.score !== null ? currentStudent.score : 85;
+    }
+
+    // 로딩 처리 UI 제어
+    function setLoaderState(loading) {
+      state.isLoading = loading;
+      if (loading) {
+        elements.btnApiLoader.classList.remove('hidden');
+        elements.btnApiIcon.classList.add('hidden');
+        elements.btnApiText.textContent = '실시간 분석 생성 중...';
+        elements.btnRunApi.disabled = true;
+        elements.btnRunDemo.disabled = true;
+        elements.btnRunApi.classList.add('opacity-75', 'cursor-not-allowed');
+      } else {
+        elements.btnApiLoader.classList.add('hidden');
+        elements.btnApiIcon.classList.remove('hidden');
+        elements.btnApiText.textContent = 'Gemini API 피드백 실행';
+        elements.btnRunApi.disabled = false;
+        elements.btnRunDemo.disabled = false;
+        elements.btnRunApi.classList.remove('opacity-75', 'cursor-not-allowed');
+      }
+    }
+
+    // ==========================================
+    // 5. API 지수 백오프 로직 구현
+    // ==========================================
+    async function callGeminiWithRetry(payload, retries = 5, delay = 1000) {
+      const activeKey = state.apiKey.trim();
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${activeKey}`;
+
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.error?.message || `HTTP 에러 발생 (상태 코드: ${response.status})`);
+        }
+
+        return await response.json();
+      } catch (error) {
+        if (retries > 0) {
+          // 다음 호출 시도 전 대기 시간 소요
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return callGeminiWithRetry(payload, retries - 1, delay * 2);
+        }
+        throw error;
+      }
+    }
+
+    // ==========================================
+    // 6. 이벤트 핸들러 바인딩
+    // ==========================================
+
+    // API Key 인풋 이벤트 리스너
+    elements.apiKeyInput.addEventListener('input', (e) => {
+      state.apiKey = e.target.value;
+      localStorage.setItem('eduai_dashboard_api_key', state.apiKey);
+    });
+
+    // 피드백 최종 저장 기능
+    elements.btnSaveFeedback.addEventListener('click', () => {
+      const currentStudent = state.students.find(s => s.id === state.selectedStudentId);
+      if (!currentStudent) return;
+
+      currentStudent.feedback = elements.editorFeedback.value;
+      currentStudent.score = parseInt(elements.editorScore.value) || 0;
+      currentStudent.status = 'completed';
+
+      showNotification('학생 피드백이 최종 저장되었습니다.', 'success');
+      renderSummary();
+      renderStudentList();
+    });
+
+    // 데모 피드백 가상 생성 로직
+    elements.btnRunDemo.addEventListener('click', () => {
+      const currentStudent = state.students.find(s => s.id === state.selectedStudentId);
+      if (!currentStudent) return;
+
+      setLoaderState(true);
+      elements.apiErrorBox.classList.add('hidden');
+
+      setTimeout(() => {
+        const demoFeedbacks = [
+          `장점: ${currentStudent.name} 학생의 글은 "${currentStudent.title}"이라는 목적에 부합하게 핵심적인 주장들이 깔끔하게 잘 정리되어 있습니다. 특히 초반 도입부에서 독자의 흥미를 유발하는 방식이 좋습니다.\n보완점: 주장에 대한 근거로 한 두 가지 더 현실적인 사례나 과학적 통계 수치가 추가되었다면 글의 신뢰도가 더욱 올라갔을 것입니다. 문장 간 매끄러운 이음새에 신경 써 보세요! 전체적으로 훌륭한 수준입니다.`,
+          `${currentStudent.name} 학생의 의견 개진 능력이 돋보입니다. 논점 일탈 없이 시종일관 논리적 긴장감을 유지한 상태로 서술해 나갔습니다. 문단의 단락 구분도 규칙적이고 어조가 매우 성숙합니다. 다만 결론 부분에서 앞서 제시한 마케팅 제안들을 한번 더 요약 강조해주었다면 완성도가 완벽했을 것입니다. 수고 많았습니다!`
+        ];
+
+        const randomFeedback = demoFeedbacks[Math.floor(Math.random() * demoFeedbacks.length)];
+        const randomScore = Math.floor(Math.random() * 15) + 85;
+
+        elements.editorFeedback.value = randomFeedback;
+        elements.editorScore.value = randomScore;
+
+        setLoaderState(false);
+        showNotification('데모 피드백이 생성되었습니다! (실제 API 키 입력 시 분석이 즉석 연동됩니다.)', 'success');
+      }, 1200);
+    });
+
+    // 실시간 Gemini API 피드백 실행
+    elements.btnRunApi.addEventListener('click', async () => {
+      const currentStudent = state.students.find(s => s.id === state.selectedStudentId);
+      if (!currentStudent) return;
+
+      if (!state.apiKey.trim()) {
+        elements.apiErrorMsg.textContent = "API 키가 입력되지 않았습니다. 우측 상단 'Gemini API Key' 필드에 올바른 API 키를 입력해 주세요.";
+        elements.apiErrorBox.classList.remove('hidden');
+        showNotification('API 키가 필요합니다.', 'error');
+        return;
+      }
+
+      setLoaderState(true);
+      elements.apiErrorBox.classList.add('hidden');
+
+      // 프롬프트 제작 데이터
+      const focusAreaTexts = {
+        structure: '글의 서론-본론-결론 구조와 흐름',
+        logic: '주장에 대한 근거의 논리성과 설득력',
+        spelling: '맞춤법, 띄어쓰기 및 올바른 어휘 사용',
+        all: '글의 구조, 논리적 타당성, 맞춤법을 전반적으로 종합하여'
+      };
+
+      const toneTexts = {
+        warm: '친절하고 따뜻하게 칭찬을 아끼지 않으며 격려하는 선생님의 말투 (~했어요, ~했네요)',
+        analytical: '객관적이고 정밀하게 장단점을 짚어주는 분석적인 말투 (~합니다, ~음)',
+        strict: '학습 성장을 위해 다소 엄격하고 정확한 개선점 위주로 지도하는 말투'
+      };
+
+      const systemPrompt = `
+        너는 학교 교사를 보조하여 학생들의 글쓰기를 전문적으로 채점하고 피드백을 주는 유능한 AI 교육 비서이다.
+        사용자가 제공하는 학생의 학년, 글의 제목, 본문 내용을 바탕으로 정성스럽고 구체적인 피드백과 예상 점수(100점 만점 기준)를 부여하라.
+        
+        [채점 기준 설정]
+        - 평가 대상 학년 수준: ${currentStudent.grade}
+        - 피드백 어조: ${toneTexts[elements.settingTone.value] || toneTexts.warm}
+        - 집중 평가 영역: ${focusAreaTexts[elements.settingFocus.value] || focusAreaTexts.all}
+        ${elements.settingCustom.value ? `- 추가 평가 요청사항: ${elements.settingCustom.value}` : ''}
+
+        [답변 양식 지정]
+        반드시 다음 JSON 형식으로만 답변을 출력해라. 다른 수식어나 마크다운 코드블록 기호(\`\`\`json 등)를 붙이지 말고 순수한 JSON 문자열만 반환해야 한다:
+        {
+          "score": (80에서 100 사이의 숫자 정수),
+          "feedback": "여기에 학생의 장점, 보완할 점, 구체적 조언을 조목조목 따뜻하고 상세하게 작성하세요."
+        }
+      `;
+
+      const userQuery = `
+        학생 이름: ${currentStudent.name}
+        글 제목: ${currentStudent.title}
+        글 내용: ${currentStudent.content}
+      `;
+
+      const payload = {
+        contents: [{ parts: [{ text: userQuery }] }],
+        systemInstruction: { parts: [{ text: systemPrompt }] }
+      };
+
+      try {
+        const result = await callGeminiWithRetry(payload);
+        const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        
+        // 마크다운 가공 및 JSON 클린 처리
+        const cleanJsonStr = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+        const parsed = JSON.parse(cleanJsonStr);
+
+        elements.editorFeedback.value = parsed.feedback || '피드백 내용을 불러오지 못했습니다.';
+        elements.editorScore.value = parsed.score || 85;
+
+        showNotification('AI 피드백 분석이 성공적으로 주입되었습니다!', 'success');
+      } catch (err) {
+        console.error(err);
+        elements.apiErrorMsg.textContent = err.message || 'API 전송 에러가 발생했습니다. 키 유효성이나 브라우저 연결 상태를 재확인해 주세요.';
+        elements.apiErrorBox.classList.remove('hidden');
+        showNotification('피드백 생성 실패', 'error');
+      } finally {
+        setLoaderState(false);
+      }
+    });
+
+    // ==========================================
+    // 7. 앱 초기화 실행
+    // ==========================================
+    window.addEventListener('DOMContentLoaded', () => {
+      // 로컬 스토리지에 저장된 API Key 복원 로직
+      const savedKey = localStorage.getItem('eduai_dashboard_api_key');
+      if (savedKey) {
+        state.apiKey = savedKey;
+        elements.apiKeyInput.value = savedKey;
+      }
+
+      renderSummary();
+      renderStudentList();
+      renderStudentDetail();
+    });
+  </script>
+</body>
+</html>
