@@ -624,50 +624,50 @@
     };
 
         // Gemini 2.5 Flash API 활용 AI 피드백 실시간 자동 생성
-    window.generateAIFeedback = async () => {
-      const report = classData.reports[selectedStudentUidForFeedback];
-      if (!report) return;
-    
-      const aiTextarea = document.getElementById('modalAIOpinion');
-      aiTextarea.value = "Gemini 인공지능이 분석 중입니다... 잠시만 기다려 주세요.";
-    
-      // ↓ GAS 배포 후 받은 웹앱 URL로 교체
-      const PROXY_URL = "https://script.google.com/macros/s/AKfycbyqE4N7PgTKD-yxo7qamM4K15sttwYwkevl-uHnbghzez_H6jVJ0kMEj3DptG_WZtkH/exec";
-    
-      const prompt = `
-        사회과 탐구 보고서 평가자로서 고등학교 교육과정에 기반하여 다음 보고서를 따뜻하고 격려하는 어조로 피드백해 주십시오.
+        window.generateAIFeedback = async () => {
+          const report = classData.reports[selectedStudentUidForFeedback];
+          if (!report) return;
         
-        학생 이름: ${report.name}
-        보고서 주제: ${report.reportTitle}
-        이주민 상생안 정책 제안: ${report.reportPolicy}
-        세계 시민으로서의 다짐 및 소감: ${report.reportInference}
+          const aiTextarea = document.getElementById('modalAIOpinion');
+          aiTextarea.value = "Gemini 인공지능이 분석 중입니다... 잠시만 기다려 주세요.";
         
-        피드백은 다음 3가지 핵심 축으로 작성해 주세요.
-        1. 우수한 점 (정책 제안의 창의성, 사회적 연대 의식)
-        2. 조금 더 고민해볼 수 있는 개선 방향 제시
-        3. 격려 및 지지 한마디 (300자 내외로 매우 친절한 경어로 정돈하여 작성할 것)
-      `;
-    
-      try {
-        const res = await fetch(PROXY_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt })
-        });
-    
-        const data = await res.json();
-    
-        if (data.error) throw new Error(data.error);
-    
-        aiTextarea.value = data.text.trim();
-        showToast("AI 피드백 생성 완료!", "success");
-    
-      } catch (err) {
-        aiTextarea.value = "AI 피드백 생성 실패. 잠시 후 다시 시도해주세요.";
-        showToast("AI 모델 응답 오류: " + err.message, "error");
-        console.error(err);
-      }
-    };
+          const PROXY_URL = "https://script.google.com/macros/s/AKfycbzJmYAjGroCV_FM5Kh6SFuMcPUIgO2pv7XnkmPoTxONRhfbKf9J4yx7_K8FCEVYDYnz/exec";
+        
+          const prompt = `
+            사회과 탐구 보고서 평가자로서 고등학교 교육과정에 기반하여 다음 보고서를 따뜻하고 격려하는 어조로 피드백해 주십시오.
+            
+            학생 이름: ${report.name}
+            보고서 주제: ${report.reportTitle}
+            이주민 상생안 정책 제안: ${report.reportPolicy}
+            세계 시민으로서의 다짐 및 소감: ${report.reportInference}
+            
+            피드백은 다음 3가지 핵심 축으로 작성해 주세요.
+            1. 우수한 점 (정책 제안의 창의성, 사회적 연대 의식)
+            2. 조금 더 고민해볼 수 있는 개선 방향 제시
+            3. 격려 및 지지 한마디 (300자 내외로 매우 친절한 경어로 정돈하여 작성할 것)
+          `;
+        
+          try {
+            const res = await fetch(PROXY_URL, {
+              method: "POST",
+              mode: "cors",
+              headers: { "Content-Type": "text/plain" },
+              body: JSON.stringify({ prompt })
+            });
+        
+            const data = await res.json();
+        
+            if (data.error) throw new Error(data.error);
+        
+            aiTextarea.value = data.text.trim();
+            showToast("AI 피드백 생성 완료!", "success");
+        
+          } catch (err) {
+            aiTextarea.value = "AI 피드백 생성 실패. 잠시 후 다시 시도해주세요.";
+            showToast("AI 모델 응답 오류: " + err.message, "error");
+            console.error(err);
+          }
+        };
 
     // 교사 피드백 및 AI 피드백을 학생 Firestore 문서에 기록 전송
     window.saveFeedbackAndSend = async () => {
