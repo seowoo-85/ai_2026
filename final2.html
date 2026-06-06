@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>국제이주 사회과 수업 - 교사용 대시보드 (실시간 통합 컨트롤러)</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;600;700&display=swap');
+    body {
+      font-family: 'Pretendard', sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 min-h-screen text-slate-100 flex flex-col">
+
+  <header class="bg-slate-950 border-b border-slate-800 shadow-xl">
+    <div class="max-w-7xl mx-auto px-6 py-5 flex flex-col md:flex-row justify-between items-center gap-4">
+      <div class="flex items-center gap-4">
+        <div class="p-3 bg-indigo-600/20 text-indigo-400 rounded-xl border border-indigo-500/30">
+          <i class="fa-solid fa-chalkboard-user text-3xl"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+            국제이주 협력학습 관리자 시스템
+            <span class="text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded">Teacher Dashboard</span>
+          </h1>
+          <p class="text-xs text-slate-400">실시간 보고서 AI 피드백 및 데이터 추출 지원형 통합 웹 콘솔</p>
+        </div>
+      </div>
+      <!-- 실시간 클라우드 상태 표시 -->
+      <div class="flex items-center gap-4 bg-slate-800 border border-slate-700 px-4 py-2.5 rounded-xl text-xs" id="authStatus">
+        <i class="fa-solid fa-circle-notch fa-spin text-indigo-400"></i>
+        <span class="text-slate-300">실시간 연동 로딩 중...</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 메인 모니터링 영역 -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-6 grid grid-cols-1 xl:grid-cols-12 gap-6">
+    
+    <div class="xl:col-span-4 flex flex-col gap-6">
+      
+      <!-- 위젯 1: 학급 현황 요약판 -->
+      <section class="bg-slate-950 p-5 rounded-2xl border border-slate-800 shadow-md">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-sm font-semibold text-slate-300 flex items-center gap-2">
+            <i class="fa-solid fa-chart-simple text-indigo-400"></i> 학급 실시간 통계
+          </h2>
+          <!-- CSV 내보내기 버튼 추가 -->
+          <button onclick="downloadCSV()" class="text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 text-indigo-300 py-1 px-2.5 rounded-lg transition flex items-center gap-1">
+            <i class="fa-solid fa-file-csv"></i> CSV 추출
+          </button>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="bg-slate-900 p-4 rounded-xl border border-slate-800/80">
+            <p class="text-xs text-slate-400">등록 완료 학생</p>
+            <p class="text-2xl font-bold text-white mt-1" id="statStudentCount">0명</p>
+          </div>
+          <div class="bg-slate-900 p-4 rounded-xl border border-slate-800/80">
+            <p class="text-xs text-slate-400">이주 역할 분석</p>
+            <p class="text-2xl font-bold text-emerald-400 mt-1" id="statSimulationCount">0명</p>
+          </div>
+          <div class="bg-slate-900 p-4 rounded-xl border border-slate-800/80">
+            <p class="text-xs text-slate-400">보고서 누적 제출</p>
+            <p class="text-2xl font-bold text-indigo-400 mt-1" id="statReportCount">0명</p>
+          </div>
+          <div class="bg-slate-900 p-4 rounded-xl border border-slate-800/80">
+            <p class="text-xs text-slate-400">평균 형성평가</p>
+            <p class="text-2xl font-bold text-amber-400 mt-1" id="statQuizAvg">0점</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 위젯 2: 찬반 의견 분포 실시간 차트 -->
+      <section class="bg-slate-950 p-5 rounded-2xl border border-slate-800 shadow-md flex-1 flex flex-col">
+        <h2 class="text-sm font-semibold text-slate-300 mb-2 flex items-center gap-2">
+          <i class="fa-solid fa-scale-balanced text-indigo-400"></i> 다문화 사회 수용도 실시간 현황
+        </h2>
+        <p class="text-[11px] text-slate-400 mb-4">학생들이 전송한 다문화 정책 수용(찬성/신중) 실시간 집계</p>
+        <div class="flex-1 relative min-h-[220px]">
+          <canvas id="stanceChart"></canvas>
+        </div>
+      </section>
+
+    </div>
+
+    <div class="xl:col-span-8 flex flex-col gap-6">
+      
+      <!-- 탭 관리 -->
+      <div class="bg-slate-950 p-1.5 rounded-xl border border-slate-800 flex flex-wrap gap-2">
+        <button onclick="switchTab('reports')" id="tabBtn-reports" class="tab-btn flex-1 py-2 px-4 rounded-lg font-medium text-xs tracking-wider transition-all bg-indigo-600 text-white shadow-md">
+          <i class="fa-solid fa-file-lines mr-1.5"></i> 학생 보고서 및 AI 첨삭
+        </button>
+        <button onclick="switchTab('simulation')" id="tabBtn-simulation" class="tab-btn flex-1 py-2 px-4 rounded-lg font-medium text-xs tracking-wider transition-all text-slate-400 hover:text-white hover:bg-slate-900">
+          <i class="fa-solid fa-person-walking-luggage mr-1.5"></i> 역할극 분석
+        </button>
+        <button onclick="switchTab('quizzes')" id="tabBtn-quizzes" class="tab-btn flex-1 py-2 px-4 rounded-lg font-medium text-xs tracking-wider transition-all text-slate-400 hover:text-white hover:bg-slate-900">
+          <i class="fa-solid fa-square-poll-vertical mr-1.5"></i> 퀴즈 점수표
+        </button>
+        <button onclick="switchTab('opinions')" id="tabBtn-opinions" class="tab-btn flex-1 py-2 px-4 rounded-lg font-medium text-xs tracking-wider transition-all text-slate-400 hover:text-white hover:bg-slate-900">
+          <i class="fa-solid fa-comment-dots mr-1.5"></i> 실시간 토론 피드
+        </button>
+      </div>
+
+      <!-- 콘텐츠 테이블 섹션 -->
+      <section class="bg-slate-950 rounded-2xl border border-slate-800 p-6 flex-1 shadow-md">
+        
+        <!-- 탭: 보고서 및 교사/AI 통합 피드백 피드 -->
+        <div id="tabContent-reports" class="tab-panel">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-base font-semibold text-white flex items-center gap-2">
+              <span class="p-1.5 bg-indigo-500/10 text-indigo-400 rounded-lg"><i class="fa-solid fa-file-contract"></i></span>
+              학생 심층 탐구 보고서 리스트 & AI 종합 평가실
+            </h3>
+            <span class="text-xs text-indigo-400"><i class="fa-solid fa-circle text-emerald-500 text-[8px] animate-pulse"></i> 실시간 수집대기</span>
+          </div>
+
+          <!-- 개별 보고서 뷰어 테이블 -->
+          <div class="overflow-x-auto max-h-[500px]">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-slate-800 text-[11px] text-slate-400 uppercase tracking-wider">
+                  <th class="pb-3 font-semibold">학생 정보</th>
+                  <th class="pb-3 font-semibold">보고서 주제</th>
+                  <th class="pb-3 font-semibold">제안한 다문화 정책 / 탐구 소감</th>
+                  <th class="pb-3 font-semibold text-center">피드백 실행</th>
+                </tr>
+              </thead>
+              <tbody id="reportsTableBody" class="text-xs divide-y divide-slate-800 text-slate-300">
+                <tr>
+                  <td colspan="4" class="py-8 text-center text-slate-500">보고서를 전송 완료한 학생 정보가 실시간으로 나타납니다.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 탭: 이주 시뮬레이션 피드백 -->
+        <div id="tabContent-simulation" class="tab-panel hidden">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-base font-semibold text-white flex items-center gap-2">
+              <span class="p-1.5 bg-blue-500/10 text-blue-400 rounded-lg"><i class="fa-solid fa-earth-americas"></i></span>
+              학생 개별 역할극 배출/흡인 요인 탐구 결과
+            </h3>
+            <span class="text-xs text-slate-400"><i class="fa-solid fa-circle text-emerald-500 text-[8px] animate-pulse"></i> 수집 중</span>
+          </div>
+
+          <div class="overflow-x-auto max-h-[500px]">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-slate-800 text-[11px] text-slate-400 uppercase tracking-wider">
+                  <th class="pb-3 font-semibold">학번/이름</th>
+                  <th class="pb-3 font-semibold">선택 시나리오</th>
+                  <th class="pb-3 font-semibold">배출 요인 (본국)</th>
+                  <th class="pb-3 font-semibold">흡인 요인 (이주국)</th>
+                  <th class="pb-3 font-semibold">이주민 고충 & 생각</th>
+                </tr>
+              </thead>
+              <tbody id="simulationTableBody" class="text-xs divide-y divide-slate-800 text-slate-300">
+                <tr>
+                  <td colspan="5" class="py-8 text-center text-slate-500">학생이 데이터를 제출하면 이곳에 실시간으로 표시됩니다.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 탭: 퀴즈 결과 및 오답률 분석 -->
+        <div id="tabContent-quizzes" class="tab-panel hidden">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-base font-semibold text-white flex items-center gap-2">
+              <span class="p-1.5 bg-indigo-500/10 text-indigo-400 rounded-lg"><i class="fa-solid fa-clipboard-check"></i></span>
+              퀴즈 실시간 채점 및 오답 통계
+            </h3>
+            <span class="text-xs text-slate-400"><i class="fa-solid fa-circle text-emerald-500 text-[8px] animate-pulse"></i> 채점 대기 중</span>
+          </div>
+
+          <div class="overflow-x-auto max-h-[500px]">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-slate-800 text-[11px] text-slate-400 uppercase tracking-wider">
+                  <th class="pb-3 font-semibold">모둠</th>
+                  <th class="pb-3 font-semibold">학번/이름</th>
+                  <th class="pb-3 font-semibold">Q1 선택</th>
+                  <th class="pb-3 font-semibold">Q2 선택</th>
+                  <th class="pb-3 font-semibold">최종 점수</th>
+                  <th class="pb-3 font-semibold">제출 시간</th>
+                </tr>
+              </thead>
+              <tbody id="quizTableBody" class="text-xs divide-y divide-slate-800 text-slate-300">
+                <tr>
+                  <td colspan="6" class="py-8 text-center text-slate-500">학생들의 퀴즈 응답 기록이 실시간으로 수집됩니다.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 탭: 토론 게시판 피드백 모아보기 -->
+        <div id="tabContent-opinions" class="tab-panel hidden">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-base font-semibold text-white flex items-center gap-2">
+              <span class="p-1.5 bg-emerald-500/10 text-emerald-400 rounded-lg"><i class="fa-solid fa-brain"></i></span>
+              다문화 사회 진입과 외국인 근로자 수용 찬반 토론 피드
+            </h3>
+            <span class="text-xs text-slate-400">총 의견 수집 완료</span>
+          </div>
+
+          <!-- 그리드 형식의 실시간 포스트잇 보드 -->
+          <div id="opinionBoard" class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto pr-2">
+            <div class="col-span-2 text-center py-12 text-slate-500 text-xs">
+              학생들의 한마디 의견이 모둠별로 모니터링됩니다.
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+    </div>
+
+  </main>
+
+  <div id="feedbackModal" class="fixed inset-0 bg-slate-950/80 flex justify-center items-center p-4 z-50 hidden">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-2xl rounded-2xl p-6 shadow-2xl relative flex flex-col max-h-[90vh]">
+      <button onclick="closeFeedbackModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark text-xl"></i></button>
+      
+      <div class="mb-4">
+        <span class="text-xs text-indigo-400 bg-indigo-500/10 py-1 px-2.5 rounded font-bold" id="modalStudentInfo">학번이름</span>
+        <h3 class="text-lg font-bold text-white mt-1.5" id="modalReportTitle">보고서 제목란</h3>
+      </div>
+
+      <div class="space-y-4 overflow-y-auto flex-1 pr-1 mb-4 text-xs text-slate-300">
+        <div class="bg-slate-950 p-3.5 rounded-lg border border-slate-800">
+          <p class="font-semibold text-indigo-300 mb-1"><i class="fa-solid fa-stamp"></i> 이주민 해결 정책 및 상생 제안 내용</p>
+          <p id="modalReportPolicy" class="leading-relaxed whitespace-pre-wrap"></p>
+        </div>
+        <div class="bg-slate-950 p-3.5 rounded-lg border border-slate-800">
+          <p class="font-semibold text-emerald-400 mb-1"><i class="fa-solid fa-quote-left"></i> 세계 시민으로서의 다짐 및 소감</p>
+          <p id="modalReportInference" class="leading-relaxed whitespace-pre-wrap"></p>
+        </div>
+
+        <!-- AI 피드백 구역 (GAS 연동) -->
+        <div class="bg-slate-950 p-3.5 rounded-lg border border-slate-800/80">
+          <div class="flex justify-between items-center mb-1">
+            <span class="font-semibold text-amber-400 flex items-center gap-1">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Gemini 2.5 Flash 인공지능 첨삭 (GAS Relay)
+            </span>
+            <button onclick="generateAIFeedback()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1 px-3 rounded transition flex items-center gap-1 text-[10px]">
+              <i class="fa-solid fa-gears"></i> AI 조언 생성하기
+            </button>
+          </div>
+          <textarea id="modalAIOpinion" class="w-full bg-slate-900 border border-slate-800 rounded p-2 text-xs focus:ring-1 focus:ring-amber-500 focus:outline-none min-h-[90px]" placeholder="위의 생성 단추를 누르시면 2.5 Flash가 실시간으로 분석한 피드백이 생성되며, 이후 직접 검토 및 보정이 가능합니다."></textarea>
+        </div>
+
+        <!-- 교사 직접 의견 구역 -->
+        <div class="bg-slate-950 p-3.5 rounded-lg border border-slate-800">
+          <p class="font-semibold text-blue-400 mb-1"><i class="fa-solid fa-pen-nib"></i> 교사 개별 정성 피드백 입력</p>
+          <textarea id="modalTeacherOpinion" class="w-full bg-slate-900 border border-slate-800 rounded p-2 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none min-h-[70px]" placeholder="교사 지도 의견을 가공해 주십시오. 입력 사항은 학생 결과 화면에 동시간으로 전송됩니다."></textarea>
+        </div>
+      </div>
+
+      <div class="flex gap-2">
+        <button onclick="closeFeedbackModal()" class="flex-1 bg-slate-800 hover:bg-slate-700 py-2 rounded-xl text-xs font-semibold">닫기</button>
+        <button onclick="saveFeedbackAndSend()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 py-2 rounded-xl text-xs font-semibold text-white"><i class="fa-solid fa-paper-plane"></i> 피드백 최종 전송</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 토스트 및 알림 메시지 레이어 -->
+  <div id="toastMessage" class="fixed bottom-5 right-5 bg-slate-950 text-white py-3.5 px-6 rounded-xl border border-slate-800 shadow-2xl transition-all duration-300 transform translate-y-20 opacity-0 pointer-events-none flex items-center gap-3 text-sm z-50">
+    <span id="toastIcon" class="text-indigo-400"><i class="fa-solid fa-bolt"></i></span>
+    <span id="toastText">처리 중입니다.</span>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // 1. 전달받은 정확한 실서버 Firebase 설정 주입
+    const firebaseConfig = {
+      apiKey: "AIzaSyCdbj-9BrRPXZEEzKx54V9tQE70pddpZCw",
+      authDomain: "aiteaching-2026.firebaseapp.com",
+      databaseURL: "https://aiteaching-2026-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "aiteaching-2026",
+      storageBucket: "aiteaching-2026.firebasestorage.app",
+      messagingSenderId: "904057962716",
+      appId: "1:904057962716:web:e927f86d4c14781cf63419",
+      measurementId: "G-8HJ7YE1MT8"
+    };
+
+    // 2. [필독] 생성한 Google Apps Script(GAS) 웹 앱 URL을 기입해 주세요.
+    // 깃허브 업로드 전 배포 완료한 URL로 변경 시, 클라이언트에서 안전하게 API Key 노출 없이 호출합니다.
+    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwqV5oW6wH8yEksZlq-Rj-EorXwSgC1pGMy6T6-uY579X0/exec";
+
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'global-migration-lesson';
+
+    let app, auth, db;
+    try {
+      app = initializeApp(firebaseConfig);
+      auth = getAuth(app);
+      db = getFirestore(app);
+    } catch(e) {
+      console.error("Firebase 초기화 에러 (교사용):", e);
+    }
+
+    let currentUser = null;
+    let chartInstance = null;
+    let selectedStudentUidForFeedback = null;
+    
+    const classData = {
+      students: {},
+      simulations: {},
+      quizzes: {},
+      opinions: {},
+      reports: {}
+    };
+
+    const initAuthentication = async () => {
+      const authDiv = document.getElementById('authStatus');
+      try {
+        if (!auth) throw new Error("Firebase Auth 모듈 초기화 실패");
+        
+        await signInAnonymously(auth);
+        
+        onAuthStateChanged(auth, (user) => {
+          if (user) {
+            currentUser = user;
+            authDiv.className = "flex items-center gap-2 bg-emerald-600/10 text-emerald-400 border border-emerald-500/20 px-4 py-2 rounded-xl text-xs font-semibold";
+            authDiv.innerHTML = `<i class="fa-solid fa-server"></i> 클라우드 DB 연동 완료`;
+            showToast("실시간 수업 모니터링 수집 모듈 작동 시작!", "success");
+            
+            // 인증이 확보된 후 안전하게 리스너 수집 개시 (RULE 3)
+            subscribeToLessonData();
+          } else {
+            authDiv.className = "flex items-center gap-2 bg-red-600/10 text-red-400 border border-red-500/20 px-4 py-2 rounded-xl text-xs font-semibold";
+            authDiv.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> 연결 중단`;
+          }
+        });
+      } catch (err) {
+        authDiv.className = "flex items-center gap-2 bg-amber-500/10 text-amber-400 border border-amber-500/20 px-4 py-2 rounded-xl text-xs font-semibold";
+        authDiv.innerHTML = `<i class="fa-solid fa-database-orange"></i> 오프라인 모니터 데모 모드`;
+        console.error("인증 실패:", err);
+        showToast("데이터베이스 오프라인 체험 모드 구동 중", "info");
+        loadDemoData();
+      }
+    };
+
+    const subscribeToLessonData = () => {
+      if (!db || !currentUser) return;
+
+      const studentsRef = collection(db, 'artifacts', appId, 'public', 'data', 'students');
+      onSnapshot(studentsRef, (snapshot) => {
+        classData.students = {};
+        snapshot.forEach(doc => {
+          classData.students[doc.id] = doc.data();
+        });
+        updateStats();
+      }, (err) => console.error("학생 구독 에러:", err));
+
+      const simulationsRef = collection(db, 'artifacts', appId, 'public', 'data', 'simulations');
+      onSnapshot(simulationsRef, (snapshot) => {
+        classData.simulations = {};
+        snapshot.forEach(doc => {
+          classData.simulations[doc.id] = doc.data();
+        });
+        renderSimulations();
+        updateStats();
+      }, (err) => console.error("시뮬레이션 구독 에러:", err));
+
+      const quizzesRef = collection(db, 'artifacts', appId, 'public', 'data', 'quizzes');
+      onSnapshot(quizzesRef, (snapshot) => {
+        classData.quizzes = {};
+        snapshot.forEach(doc => {
+          classData.quizzes[doc.id] = doc.data();
+        });
+        renderQuizzes();
+        updateStats();
+      }, (err) => console.error("퀴즈 구독 에러:", err));
+
+      const opinionsRef = collection(db, 'artifacts', appId, 'public', 'data', 'opinions');
+      onSnapshot(opinionsRef, (snapshot) => {
+        classData.opinions = {};
+        snapshot.forEach(doc => {
+          classData.opinions[doc.id] = doc.data();
+        });
+        renderOpinions();
+        updateStats();
+      }, (err) => console.error("토론 구독 에러:", err));
+
+      const reportsRef = collection(db, 'artifacts', appId, 'public', 'data', 'reports');
+      onSnapshot(reportsRef, (snapshot) => {
+        classData.reports = {};
+        snapshot.forEach(doc => {
+          classData.reports[doc.id] = doc.data();
+        });
+        renderReports();
+        updateStats();
+      }, (err) => console.error("보고서 구독 에러:", err));
+    };
+
+    const updateStats = () => {
+      const studentKeys = Object.keys(classData.students);
+      const simKeys = Object.keys(classData.simulations);
+      const quizKeys = Object.keys(classData.quizzes);
+      const reportKeys = Object.keys(classData.reports);
+      
+      const studentCount = studentKeys.length;
+      const simCount = simKeys.length;
+      const quizCount = quizKeys.length;
+      const reportCount = reportKeys.length;
+
+      let quizAvg = 0;
+      if (quizCount > 0) {
+        const total = Object.values(classData.quizzes).reduce((acc, curr) => acc + (curr.score || 0), 0);
+        quizAvg = Math.round(total / quizCount);
+      }
+
+      document.getElementById('statStudentCount').innerText = `${studentCount}명`;
+      document.getElementById('statSimulationCount').innerText = `${simCount}명`;
+      document.getElementById('statReportCount').innerText = `${reportCount}명`;
+      document.getElementById('statQuizAvg').innerText = `${quizAvg}점`;
+
+      let agree = 0;
+      let cautious = 0;
+      Object.values(classData.opinions).forEach(op => {
+        if (op.stance === "찬성") agree++;
+        if (op.stance === "신중") cautious++;
+      });
+
+      updateStanceChart(agree, cautious);
+    };
+
+    window.switchTab = (tabName) => {
+      document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.className = "tab-btn flex-1 py-2 px-4 rounded-lg font-medium text-xs tracking-wider transition-all text-slate-400 hover:text-white hover:bg-slate-900";
+      });
+
+      document.getElementById(`tabContent-${tabName}`).classList.remove('hidden');
+      const activeBtn = document.getElementById(`tabBtn-${tabName}`);
+      activeBtn.className = "tab-btn flex-1 py-2 px-4 rounded-lg font-medium text-xs tracking-wider transition-all bg-indigo-600 text-white shadow-md";
+    };
+
+    const renderReports = () => {
+      const tbody = document.getElementById('reportsTableBody');
+      const items = Object.entries(classData.reports);
+
+      if (items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-slate-500">아직 제출 완료된 심층 탐구 보고서가 없습니다.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = items.map(([uid, report]) => {
+        return `
+          <tr class="hover:bg-slate-900/60 transition-colors">
+            <td class="py-3.5 pr-2">
+              <span class="block font-semibold text-white text-sm">${report.name}</span>
+              <span class="text-[10px] text-slate-500">${report.studentId} | ${report.group}</span>
+            </td>
+            <td class="py-3.5 pr-2">
+              <span class="text-xs text-indigo-300 font-semibold block">${report.reportTitle}</span>
+              <span class="text-[9px] text-slate-500">역할극: ${report.scenario || '없음'}</span>
+            </td>
+            <td class="py-3.5 pr-2 max-w-[280px]">
+              <p class="text-[11px] text-slate-400 truncate mb-1"><strong>해결안:</strong> ${report.reportPolicy}</p>
+              <p class="text-[11px] text-slate-500 truncate"><strong>소감:</strong> ${report.reportInference}</p>
+            </td>
+            <td class="py-3.5 text-center">
+              <button onclick="openFeedbackModal('${uid}')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold py-1.5 px-3 rounded-lg transition-all flex items-center gap-1 mx-auto shadow">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> 채점 & AI 피드백
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    };
+
+    const renderSimulations = () => {
+      const tbody = document.getElementById('simulationTableBody');
+      const items = Object.values(classData.simulations);
+
+      if (items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-500">아직 제출된 가상 이주 역할 분석이 없습니다.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = items.map(sim => {
+        const scenarioStr = {
+          syria: "🇸🇾 야스민 (시리아 난민)",
+          vietnam: "🇻🇳 응우옌 (IT 개발자)",
+          mexico: "🇲🇽 호세 (농업 노동자)",
+          tuvalu: "🇹🇻 타네 (투발루 청년)"
+        }[sim.scenario] || sim.scenario;
+
+        return `
+          <tr class="hover:bg-slate-900/60 transition-colors">
+            <td class="py-3.5 pr-2">
+              <span class="block font-semibold text-white text-sm">${sim.name}</span>
+              <span class="text-[10px] text-slate-500">${sim.studentId} | ${sim.group}</span>
+            </td>
+            <td class="py-3.5 pr-2">
+              <span class="text-xs text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-1 rounded-md font-medium">${scenarioStr}</span>
+            </td>
+            <td class="py-3.5 pr-2 max-w-[150px] truncate" title="${sim.pushFactor || ''}">
+              <p class="text-xs text-red-400">${sim.pushFactor || '-'}</p>
+            </td>
+            <td class="py-3.5 pr-2 max-w-[150px] truncate" title="${sim.pullFactor || ''}">
+              <p class="text-xs text-emerald-400">${sim.pullFactor || '-'}</p>
+            </td>
+            <td class="py-3.5 max-w-[200px] whitespace-normal leading-relaxed text-slate-400">
+              ${sim.decision || '-'}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    };
+
+    const renderQuizzes = () => {
+      const tbody = document.getElementById('quizTableBody');
+      const items = Object.values(classData.quizzes);
+
+      if (items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-500">퀴즈에 응한 학생이 없습니다.</td></tr>`;
+        return;
+      }
+
+      items.sort((a, b) => Number(a.studentId) - Number(b.studentId));
+
+      tbody.innerHTML = items.map(quiz => {
+        const isQ1Correct = quiz.q1 === 'B';
+        const isQ2Correct = quiz.q2 === 'B';
+        const scoreColor = quiz.score === 100 ? 'text-emerald-400' : (quiz.score === 50 ? 'text-amber-400' : 'text-red-400');
+
+        return `
+          <tr class="hover:bg-slate-900/60 transition-colors">
+            <td class="py-3.5 font-medium text-slate-400">${quiz.group || '-'}</td>
+            <td class="py-3.5 font-semibold text-white">${quiz.studentId} ${quiz.name}</td>
+            <td class="py-3.5">
+              <span class="px-2 py-0.5 rounded ${isQ1Correct ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}">
+                ${quiz.q1 || '-'} (${isQ1Correct ? '정답' : '오답'})
+              </span>
+            </td>
+            <td class="py-3.5">
+              <span class="px-2 py-0.5 rounded ${isQ2Correct ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}">
+                ${quiz.q2 || '-'} (${isQ2Correct ? '정답' : '오답'})
+              </span>
+            </td>
+            <td class="py-3.5 font-bold ${scoreColor} text-sm">${quiz.score}점</td>
+            <td class="py-3.5 text-[10px] text-slate-500">${quiz.submittedAt ? quiz.submittedAt.substring(11, 16) : '-'}</td>
+          </tr>
+        `;
+      }).join('');
+    };
+
+    const renderOpinions = () => {
+      const board = document.getElementById('opinionBoard');
+      const items = Object.values(classData.opinions);
+
+      if (items.length === 0) {
+        board.innerHTML = `<div class="col-span-2 text-center py-12 text-slate-500 text-xs">의견이 제출되지 않았습니다.</div>`;
+        return;
+      }
+
+      board.innerHTML = items.map(op => {
+        const stanceBadge = op.stance === "찬성" 
+          ? `<span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] px-2 py-0.5 rounded font-bold">수용 및 공존</span>` 
+          : `<span class="bg-red-500/10 text-red-400 border border-red-500/30 text-[10px] px-2 py-0.5 rounded font-bold">단계적 수용</span>`;
+
+        const groupColor = {
+          '1모둠': 'border-l-blue-500',
+          '2모둠': 'border-l-emerald-500',
+          '3모둠': 'border-l-amber-500',
+          '4모둠': 'border-l-rose-500'
+        }[op.group] || 'border-l-slate-600';
+
+        return `
+          <div class="bg-slate-900 border-l-4 ${groupColor} p-4 rounded-xl shadow-sm border border-slate-800">
+            <div class="flex justify-between items-center mb-2">
+              <div>
+                <span class="text-xs font-semibold text-white mr-1">${op.name}</span>
+                <span class="text-[10px] text-slate-500">${op.studentId} | ${op.group}</span>
+              </div>
+              ${stanceBadge}
+            </div>
+            <p class="text-slate-300 text-xs leading-relaxed font-light">${op.opinion}</p>
+            <div class="text-right mt-2">
+              <span class="text-[9px] text-slate-600">${op.submittedAt ? op.submittedAt.substring(11, 19) : ''}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    };
+
+    window.openFeedbackModal = (uid) => {
+      selectedStudentUidForFeedback = uid;
+      const report = classData.reports[uid];
+
+      document.getElementById('modalStudentInfo').innerText = `${report.studentId} ${report.name} (${report.group})`;
+      document.getElementById('modalReportTitle').innerText = report.reportTitle;
+      document.getElementById('modalReportPolicy').innerText = report.reportPolicy;
+      document.getElementById('modalReportInference').innerText = report.reportInference;
+
+      document.getElementById('modalAIOpinion').value = "";
+      document.getElementById('modalTeacherOpinion').value = "";
+
+      document.getElementById('feedbackModal').classList.remove('hidden');
+    };
+
+    window.closeFeedbackModal = () => {
+      document.getElementById('feedbackModal').classList.add('hidden');
+    };
+
+    window.generateAIFeedback = async () => {
+      const report = classData.reports[selectedStudentUidForFeedback];
+      if (!report) return;
+
+      const aiTextarea = document.getElementById('modalAIOpinion');
+      aiTextarea.value = "Gemini 인공지능이 GAS를 통해 안전하게 분석 중입니다... 잠시만 기다려 주세요.";
+
+      // 구글 Apps Script 주소가 비어있는 경우 방어 코드 작동
+      if (!GAS_WEB_APP_URL || GAS_WEB_APP_URL.includes("이곳에_배포한")) {
+        aiTextarea.value = "오류: 교사용 대시보드 스크립트 상단의 'GAS_WEB_APP_URL' 변수가 배포된 실제 구글 주소로 채워져 있지 않습니다. 코드를 확인해 주세요.";
+        showToast("GAS 주소 바인딩 누락", "error");
+        return;
+      }
+
+      // 2.5 Flash 전용 지시사항 및 프롬프트 주입
+      const promptText = `
+        역할: 고등학교 사회과 교사 및 교육과정 컨설턴트
+        학생 이름: ${report.name}
+        보고서 주제: ${report.reportTitle}
+        제안한 정책 방안: ${report.reportPolicy}
+        세계시민 소감 및 다짐: ${report.reportInference}
+        
+        위 내용을 고등학교 사회과 평가 규칙과 연동하여 따뜻하고 친절한 어조의 성찰 평가서로 작성해 줘.
+        아래 구조를 따를 것:
+        1. 탁월한 점 (창의적인 상생 방안, 세계 시민으로서의 뛰어난 연대적 가치 포착)
+        2. 좀 더 심화해서 알아볼 수 있는 주제 및 피드백 제안
+        3. 격려 및 지지 한마디 (300자 내외의 경어체 한국어로 요약)
+      `;
+
+      try {
+        // GAS 웹 앱으로 POST 요청 전송 (CORS 극복을 위해 text/plain 권장 유형 사용)
+        const response = await fetch(GAS_WEB_APP_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "text/plain;charset=utf-8"
+          },
+          body: JSON.stringify({
+            prompt: promptText
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP 통신 실패 (코드: ${response.status})`);
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+          aiTextarea.value = result.text.trim();
+          showToast("Gemini AI 성장 지지서 분석 완료!", "success");
+        } else {
+          aiTextarea.value = `AI 피드백 가공 실패: ${result.error}`;
+          showToast("AI 모델 처리 중 오류 발생", "error");
+        }
+
+      } catch (error) {
+        console.error("GAS API 통신 중 네트워크 에러:", error);
+        aiTextarea.value = `네트워크 통신 중 에러가 발생했습니다: ${error.message}\n구글 앱스 스크립트 배포 시 액세스 권한이 'Anyone'으로 올바르게 열려있는지 다시 한번 확인해 주세요.`;
+        showToast("네트워크 릴레이 통신 실패", "error");
+      }
+    };
+
+    window.saveFeedbackAndSend = async () => {
+      if (!selectedStudentUidForFeedback) return;
+
+      const aiOpinion = document.getElementById('modalAIOpinion').value.trim();
+      const teacherOpinion = document.getElementById('modalTeacherOpinion').value.trim();
+
+      if (!db || !currentUser) {
+        showToast("데이터 동기화 인증 락이 해제되지 않았습니다.", "error");
+        return;
+      }
+
+      const feedbackPayload = {
+        studentUid: selectedStudentUidForFeedback,
+        aiOpinion: aiOpinion || "인공지능 분석 검토 완료",
+        teacherOpinion: teacherOpinion || "보고서를 훌륭하게 수행했습니다. 한 학기 동안 큰 성장이 기대됩니다.",
+        updatedAt: new Date().toISOString()
+      };
+
+      try {
+        const feedbackDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'feedbacks', selectedStudentUidForFeedback);
+        await setDoc(feedbackDocRef, feedbackPayload, { merge: true });
+        showToast("AI 분석 및 개별 피드백이 학생의 화면에 실시간 송출되었습니다!", "success");
+        closeFeedbackModal();
+      } catch (err) {
+        console.error("피드백 전송 실패:", err);
+        showToast("수업 평가 동기화 중 오류가 발생했습니다.", "error");
+      }
+    };
+
+    window.downloadCSV = () => {
+      const studentUids = Object.keys(classData.students);
+      if (studentUids.length === 0) {
+        showToast("학급에 접속해 자료를 전송한 학생 데이터가 발견되지 않았습니다.", "error");
+        return;
+      }
+
+      // 한글 엑셀 깨짐을 사전 방지하는 UTF-8 BOM 바인딩
+      let csvContent = "\uFEFF";
+      csvContent += "학번,이름,모둠,역할극 시나리오,배출요인,흡인요인,이주결정,보고서 제목,해결방안 정책,탐구소감,Q1응답,Q2응답,형성평가점수,토론입장,토론내용\n";
+
+      studentUids.forEach(uid => {
+        const profile = classData.students[uid] || {};
+        const sim = classData.simulations[uid] || {};
+        const rep = classData.reports[uid] || {};
+        const quiz = classData.quizzes[uid] || {};
+        const op = classData.opinions[uid] || {};
+
+        const row = [
+          profile.studentId || "-",
+          `"${(profile.name || "").replace(/"/g, '""')}"`,
+          profile.group || "-",
+          sim.scenario || "-",
+          `"${(sim.pushFactor || "").replace(/"/g, '""')}"`,
+          `"${(sim.pullFactor || "").replace(/"/g, '""')}"`,
+          `"${(sim.decision || "").replace(/"/g, '""')}"`,
+          `"${(rep.reportTitle || "").replace(/"/g, '""')}"`,
+          `"${(rep.reportPolicy || "").replace(/"/g, '""')}"`,
+          `"${(rep.reportInference || "").replace(/"/g, '""')}"`,
+          quiz.q1 || "-",
+          quiz.q2 || "-",
+          quiz.score !== undefined ? `${quiz.score}점` : "-",
+          op.stance || "-",
+          `"${(op.opinion || "").replace(/"/g, '""')}"`
+        ];
+
+        csvContent += row.join(",") + "\n";
+      });
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `국제이주_사회수업_통합포트폴리오_${new Date().toISOString().substring(0,10)}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast("학급 활동 기록 포트폴리오(CSV) 저장이 성공했습니다!", "success");
+    };
+
+    const updateStanceChart = (agree, cautious) => {
+      const ctx = document.getElementById('stanceChart').getContext('2d');
+      
+      if (chartInstance) {
+        chartInstance.destroy();
+      }
+
+      chartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['적극 수용 및 공존', '단계적 수용 및 제한'],
+          datasets: [{
+            data: [agree || 1, cautious || 1],
+            backgroundColor: ['#10b981', '#f43f5e'],
+            hoverOffset: 4,
+            borderWidth: 2,
+            borderColor: '#0f172a'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                color: '#94a3b8',
+                font: { size: 10, family: 'Pretendard' }
+              }
+            }
+          }
+        }
+      });
+    };
+
+    const showToast = (message, type = "info") => {
+      const toast = document.getElementById('toastMessage');
+      const text = document.getElementById('toastText');
+      const icon = document.getElementById('toastIcon');
+
+      text.innerText = message;
+
+      if (type === "success") {
+        icon.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400"></i>`;
+      } else if (type === "error") {
+        icon.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-500"></i>`;
+      } else {
+        icon.innerHTML = `<i class="fa-solid fa-atom text-indigo-400"></i>`;
+      }
+
+      toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+        toast.classList.remove('translate-y-0', 'opacity-100');
+      }, 3000);
+    };
+
+    const loadDemoData = () => {
+      classData.students = {
+        "uid1": { studentId: "10101", name: "김지우", group: "1모둠" },
+        "uid2": { studentId: "10214", name: "박민준", group: "2모둠" }
+      };
+
+      classData.simulations = {
+        "uid1": { studentId: "10101", name: "김지우", group: "1모둠", scenario: "vietnam", pushFactor: "현지 IT 인재 과포화 및 임금수준 정체", pullFactor: "한국의 탄탄한 기술 생태계 인프라와 높은 대우", decision: "더 넓은 기회와 성장을 위해 자발적 한국 취업 이주 결정", submittedAt: new Date().toISOString() }
+      };
+
+      classData.reports = {
+        "uid1": { studentId: "10101", name: "김지우", group: "1모둠", scenario: "vietnam", reportTitle: "다원주의 가치에 기조한 청년 IT 이주인재 기술 정착안", reportPolicy: "이주민 특화 코워킹 플레이스 마련 및 이주 인센티브 매핑을 통한 정주 여건 마련", reportInference: "정주 국가의 구성원으로서 기여 가능한 주체로서 이주 인재들을 대우해야 함을 실천 다짐으로 깨달음.", submittedAt: new Date().toISOString() }
+      };
+
+      classData.quizzes = {
+        "uid1": { studentId: "10101", name: "김지우", group: "1모둠", q1: "B", q2: "B", score: 100, submittedAt: new Date().toISOString() }
+      };
+
+      classData.opinions = {
+        "uid1": { studentId: "10101", name: "김지우", group: "1모둠", opinion: "다원주의 정책과 결을 맞추어 사회 보장 수준을 넓히며 다원 공존에 적극 힘써야 합니다.", stance: "찬성", submittedAt: new Date().toISOString() }
+      };
+
+      updateStats();
+      renderReports();
+      renderSimulations();
+      renderQuizzes();
+      renderOpinions();
+    };
+
+    window.onload = () => {
+      initAuthentication();
+    };
+  </script>
+</body>
+</html>
