@@ -656,9 +656,13 @@
             });
         
             const data = await res.json();
-        
+            
             if (data.error) throw new Error(data.error);
-        
+            
+            if (!data.text || data.text.trim() === "") {
+              throw new Error("AI 응답이 비어 있습니다. Apps Script 로그를 확인하세요.");
+            }
+            
             aiTextarea.value = data.text.trim();
             showToast("AI 피드백 생성 완료!", "success");
         
