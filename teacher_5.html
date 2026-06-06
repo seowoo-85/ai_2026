@@ -623,15 +623,17 @@
       document.getElementById('feedbackModal').classList.add('hidden');
     };
 
-    // Gemini 2.5 Flash API 활용 AI 피드백 실시간 자동 생성
+        // Gemini 2.5 Flash API 활용 AI 피드백 실시간 자동 생성
     window.generateAIFeedback = async () => {
       const report = classData.reports[selectedStudentUidForFeedback];
       if (!report) return;
-
+    
       const aiTextarea = document.getElementById('modalAIOpinion');
-      aiTextarea.value = "Gemini 인공지능이 분석 보고서를 상세 평가하는 중입니다... 잠시만 기다려 주세요.";
-
-      // 2.5 Flash를 활용한 프롬프트 구성
+      aiTextarea.value = "Gemini 인공지능이 분석 중입니다... 잠시만 기다려 주세요.";
+    
+      // ↓ GAS 배포 후 받은 웹앱 URL로 교체
+      const PROXY_URL = "https://script.google.com/macros/s/AKfycbyqE4N7PgTKD-yxo7qamM4K15sttwYwkevl-uHnbghzez_H6jVJ0kMEj3DptG_WZtkH/exec";
+    
       const prompt = `
         사회과 탐구 보고서 평가자로서 고등학교 교육과정에 기반하여 다음 보고서를 따뜻하고 격려하는 어조로 피드백해 주십시오.
         
@@ -645,42 +647,25 @@
         2. 조금 더 고민해볼 수 있는 개선 방향 제시
         3. 격려 및 지지 한마디 (300자 내외로 매우 친절한 경어로 정돈하여 작성할 것)
       `;
-
-      const apiKey = "AQ.Ab8RN6LWFul5T_AoQXZ0YI9zOrbmn7A_TzIFeVsI5P-vN-1QEg"; // Canvas 환경에서 자동 공급되는 특수 Key 지원 규격 준수
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-
-      let retries = 5;
-      let delay = 1000;
-
-      while (retries > 0) {
-        try {
-          const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: prompt }] }]
-            })
-          });
-
-          if (!response.ok) throw new Error("API 요청 오류");
-
-          const data = await response.json();
-          const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (aiResponse) {
-            aiTextarea.value = aiResponse.trim();
-            showToast("AI 성장 지지서 분석 성공!", "success");
-            return;
-          }
-        } catch (e) {
-          retries--;
-          if (retries === 0) {
-            aiTextarea.value = "AI 피드백 로딩 실패. 수동 보정을 활용해 주시거나 잠시 후 다시 생성 버튼을 눌러주십시오.";
-            showToast("AI 모델 응답 지연", "error");
-          } else {
-            await new Promise(r => setTimeout(r, delay));
-            delay *= 2;
-          }
-        }
+    
+      try {
+        const res = await fetch(PROXY_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt })
+        });
+    
+        const data = await res.json();
+    
+        if (data.error) throw new Error(data.error);
+    
+        aiTextarea.value = data.text.trim();
+        showToast("AI 피드백 생성 완료!", "success");
+    
+      } catch (err) {
+        aiTextarea.value = "AI 피드백 생성 실패. 잠시 후 다시 시도해주세요.";
+        showToast("AI 모델 응답 오류: " + err.message, "error");
+        console.error(err);
       }
     };
 
