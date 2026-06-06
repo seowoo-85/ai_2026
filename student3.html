@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>국제 이주정책 시뮬레이터 대시보드 (학생용)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons for premium visual design -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap');
+        body {
+            font-family: 'Pretendard', sans-serif;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- 상단 헤더 -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-indigo-600 rounded-lg text-white">
+                    <i data-lucide="globe" class="w-6 h-6 animate-pulse"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        국제 이주정책 시뮬레이터
+                        <span class="text-xs bg-indigo-100 text-indigo-800 font-semibold px-2 py-0.5 rounded-full">학생용</span>
+                    </h1>
+                    <p class="text-xs text-slate-500">지구촌 인구 이동과 조화로운 공존을 위한 정책 탐색</p>
+                </div>
+            </div>
+            <!-- 학생 정보 배지 (이름 실시간 업데이트 및 UID 표시) -->
+            <div class="flex items-center space-x-3">
+                <div class="text-right hidden sm:block">
+                    <div class="text-sm font-semibold text-slate-700 flex items-center justify-end gap-1.5">
+                        <i data-lucide="user" class="w-4 h-4 text-indigo-500"></i>
+                        <span id="student-name-display" class="text-indigo-600 font-bold">이름 미설정</span> 학생
+                    </div>
+                    <div class="text-[11px] text-slate-400 font-mono flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 mt-0.5">
+                        <span id="student-uid-label">로컬 세션 가동</span>
+                        <button onclick="copyUID()" class="hover:text-indigo-600 transition" title="UID 복사">
+                            <i data-lucide="copy" class="w-3 h-3"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="student-avatar" class="w-10 h-10 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center font-bold text-sm border-2 border-slate-200">
+                    ?
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 메인 대시보드 레이아웃 -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full flex flex-col md:flex-row gap-6">
+        
+        <!-- 왼쪽 내비게이션 바 -->
+        <aside class="md:w-64 flex-shrink-0">
+            <nav class="space-y-1.5 sticky top-24">
+                <button onclick="switchTab('learn')" id="tab-btn-learn" class="tab-btn w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 bg-indigo-600 text-white shadow-md shadow-indigo-100">
+                    <i data-lucide="book-open" class="w-5 h-5"></i>
+                    <span>1. 배움 & 탐색</span>
+                </button>
+                <button onclick="switchTab('simulator')" id="tab-btn-simulator" class="tab-btn w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900">
+                    <i data-lucide="sliders" class="w-5 h-5"></i>
+                    <span>2. 정책 시뮬레이터</span>
+                </button>
+                <button onclick="switchTab('report')" id="tab-btn-report" class="tab-btn w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900">
+                    <i data-lucide="file-text" class="w-5 h-5"></i>
+                    <span>3. 성찰 & 제출</span>
+                </button>
+
+                <!-- 학습 가이드 카드 -->
+                <div class="mt-8 p-4 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl border border-indigo-100/50">
+                    <h3 class="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <i data-lucide="sparkles" class="w-3.5 h-3.5 text-indigo-600"></i> 오늘의 학습 미션
+                    </h3>
+                    <ul class="text-xs text-indigo-950 space-y-2">
+                        <li class="flex gap-2">
+                            <span class="text-indigo-600 font-bold">1</span>
+                            <span>인구이동 원인과 통계를 학습하고 공존 가치를 이해해 보세요.</span>
+                        </li>
+                        <li class="flex gap-2">
+                            <span class="text-indigo-600 font-bold">2</span>
+                            <span>시뮬레이터를 통해 가장 이상적인 이주 정책 조합을 찾아보세요.</span>
+                        </li>
+                        <li class="flex gap-2">
+                            <span class="text-indigo-600 font-bold">3</span>
+                            <span>본인의 이름을 입력하고 성찰 보고서를 완성하여 제출해 보세요.</span>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- 메인 콘텐츠 영역 -->
+        <main class="flex-1 min-w-0 bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+            
+            <!-- 탭 1: 배움 & 탐색 -->
+            <section id="tab-content-learn" class="tab-pane p-6 sm:p-8 space-y-8">
+                <!-- 헤더 타이틀 -->
+                <div class="border-b border-slate-100 pb-5">
+                    <div class="flex items-center gap-2 text-indigo-600 font-semibold text-sm mb-1">
+                        <i data-lucide="globe-2" class="w-4 h-4"></i> Global Migration & Coexistence
+                    </div>
+                    <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">지구촌 인구 이동과 조화로운 공존</h2>
+                    <p class="text-slate-500 mt-1">오늘날 인류는 국경을 넘어 그 어느 때보다 역동적으로 이동하고 있습니다. 원인과 흐름을 알고 함께 사는 내일을 계획해 봅시다.</p>
+                </div>
+
+                <!-- 학습 카드 섹션 -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="p-5 rounded-2xl bg-slate-50 border border-slate-100 hover:border-indigo-100 transition duration-200">
+                        <div class="w-10 h-10 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center mb-4">
+                            <i data-lucide="log-in" class="w-5 h-5"></i>
+                        </div>
+                        <h4 class="font-bold text-slate-800 text-base mb-2">당기는 요인 (Pull Factors)</h4>
+                        <p class="text-xs text-slate-600 leading-relaxed">
+                            높은 임금 수준, 일자리 기회, 안정된 정치 체제, 질 높은 보건과 복지, 교육 기회 등 특정 국가가 이주민을 끌어당기는 긍정적인 사회·경제적 요소들을 의미합니다.
+                        </p>
+                    </div>
+                    <div class="p-5 rounded-2xl bg-slate-50 border border-slate-100 hover:border-rose-100 transition duration-200">
+                        <div class="w-10 h-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center mb-4">
+                            <i data-lucide="log-out" class="w-5 h-5"></i>
+                        </div>
+                        <h4 class="font-bold text-slate-800 text-base mb-2">밀어내는 요인 (Push Factors)</h4>
+                        <p class="text-xs text-slate-600 leading-relaxed">
+                            빈곤과 실업, 전쟁과 분쟁, 정치적 탄압, 기후 변화 및 자연재해 등 살아가던 원래 거주지를 떠나 다른 나라로 향할 수밖에 없게 만드는 위기 상황과 한계들을 의미합니다.
+                        </p>
+                    </div>
+                    <div class="p-5 rounded-2xl bg-slate-50 border border-slate-100 hover:border-emerald-100 transition duration-200">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center mb-4">
+                            <i data-lucide="users" class="w-5 h-5"></i>
+                        </div>
+                        <h4 class="font-bold text-slate-800 text-base mb-2">문화적 시너지와 공존</h4>
+                        <p class="text-xs text-slate-600 leading-relaxed">
+                            다양한 국가 출신의 구성원이 상호 존중을 바탕으로 결합할 때, 창의성이 폭발하고 노동 부족이 해소되며 보다 조화롭고 역동적인 세계 시민 사회를 건설할 수 있습니다.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Our World in Data 지도 임베딩 영역 -->
+                <div class="border border-slate-200 rounded-2xl overflow-hidden shadow-sm bg-slate-900">
+                    <div class="bg-slate-800 px-4 py-3 border-b border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div class="flex items-center space-x-2 text-white">
+                            <i data-lucide="map" class="w-5 h-5 text-indigo-400"></i>
+                            <span class="font-semibold text-sm">실시간 데이터 시각화: Our World in Data</span>
+                        </div>
+                        <span class="text-xs bg-slate-700 text-indigo-200 px-2.5 py-1 rounded-full font-medium">전세계 순이주(Net Migration) 분석</span>
+                    </div>
+                    <!-- 실제 Our World In Data 순이주 지도 iframe 임베딩 -->
+                    <div class="relative w-full h-[450px]">
+                        <iframe src="https://ourworldindata.org/grapher/net-migration?tab=map" 
+                                loading="lazy" 
+                                style="width: 100%; height: 100%; border: 0px none;"
+                                class="bg-white">
+                        </iframe>
+                    </div>
+                    <div class="p-4 bg-slate-50 border-t border-slate-100 text-xs text-slate-500">
+                        💡 <strong>자료 분석 가이드:</strong> 위 지도에서 <span class="text-indigo-600 font-semibold">파란색(양수)</span>은 유입 이주민이 유출 이주민보다 많은 국가를, <span class="text-rose-600 font-semibold">빨간색(음수)</span>은 유출 이주민이 많은 국가를 뜻합니다. 어느 대륙과 국가에서 활발한 인구이동이 일어나고 있는지 지도를 마우스로 조작해 탐색해보세요.
+                    </div>
+                </div>
+
+                <!-- 조화로운 공존 핵심 원리 -->
+                <div class="bg-indigo-50/40 rounded-2xl p-6 border border-indigo-100 space-y-4">
+                    <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i data-lucide="handshake" class="text-indigo-600 w-5 h-5"></i> 조화로운 공존을 향한 3가지 열쇠
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+                        <div class="space-y-1.5">
+                            <span class="text-indigo-600 font-bold text-sm">01. 법적 권리와 인권 보장</span>
+                            <p class="text-xs text-slate-600 leading-relaxed">모든 사람은 거주지와 상관없이 기본권을 보장받아야 합니다. 이주노동자의 안전과 안전한 주거 환경 마련이 급선무입니다.</p>
+                        </div>
+                        <div class="space-y-1.5">
+                            <span class="text-indigo-600 font-bold text-sm">02. 문화적 다원주의의 확산</span>
+                            <p class="text-xs text-slate-600 leading-relaxed">이주민들이 자신의 문화를 유지하면서 주류 사회에 녹아들 수 있도록 상호존중 교육과 열린 태도가 필수적입니다.</p>
+                        </div>
+                        <div class="space-y-1.5">
+                            <span class="text-indigo-600 font-bold text-sm">03. 사회통합(Social Integration)</span>
+                            <p class="text-xs text-slate-600 leading-relaxed">언어 습득 지원, 맞춤형 진로 교육, 그리고 지역 사회 교류 프로그램을 통해 갈등을 최소화하고 한 팀이 되는 사회 구조를 지향합니다.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 탭 전환 유도 버튼 -->
+                <div class="flex justify-end pt-4">
+                    <button onclick="switchTab('simulator')" class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-xl transition shadow-lg shadow-indigo-100">
+                        <span>다음: 시뮬레이터 도전하기</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- 탭 2: 시뮬레이터 -->
+            <section id="tab-content-simulator" class="tab-pane p-6 sm:p-8 space-y-8 hidden">
+                <div class="border-b border-slate-100 pb-5">
+                    <div class="flex items-center gap-2 text-indigo-600 font-semibold text-sm mb-1">
+                        <i data-lucide="cpu" class="w-4 h-4"></i> Migration Policy Interactive Simulator
+                    </div>
+                    <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">이주 정책 시뮬레이터</h2>
+                    <p class="text-slate-500 mt-1">이주민 수용 수준과 지원 예산을 마우스로 조정하여 노동력 증대, 재정 영향, 사회 조화의 황금 비율을 찾아보세요.</p>
+                </div>
+
+                <!-- 시뮬레이터 전체 레이아웃 (좌: 슬라이더 컨트롤러, 우: 결과 차트) -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    <!-- 정책 설정 (컨트롤 패널) -->
+                    <div class="lg:col-span-5 space-y-6">
+                        <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                            <i data-lucide="settings-2" class="w-4 h-4 text-indigo-600"></i>
+                            지구촌 국가의 정책 변수 조정
+                        </h3>
+
+                        <!-- 1. 이주민 연간 수용 한도 -->
+                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                            <div class="flex justify-between items-center mb-2">
+                                <label for="range-limit" class="text-xs font-semibold text-slate-700">이주민 수용 한도 (명)</label>
+                                <span id="val-limit" class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">50,000 명</span>
+                            </div>
+                            <input type="range" id="range-limit" min="10000" max="200000" step="10000" value="50000" oninput="runSimulation()" class="w-full accent-indigo-600 cursor-pointer">
+                            <p class="text-[10px] text-slate-400 mt-1">수용 한도를 높이면 노동력이 확보되지만, 공공 서비스 지출 부담이 증가할 수 있습니다.</p>
+                        </div>
+
+                        <!-- 2. 사회 통합 예산 지원율 -->
+                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                            <div class="flex justify-between items-center mb-2">
+                                <label for="range-budget" class="text-xs font-semibold text-slate-700">사회 통합 예산 지원 (%)</label>
+                                <span id="val-budget" class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">40 %</span>
+                            </div>
+                            <input type="range" id="range-budget" min="0" max="100" step="5" value="40" oninput="runSimulation()" class="w-full accent-indigo-600 cursor-pointer">
+                            <p class="text-[10px] text-slate-400 mt-1">예산을 투입할수록 사회적 불화는 낮추고 문화 다양성은 늘어나지만, 국가 재정 부담이 늘어납니다.</p>
+                        </div>
+
+                        <!-- 3. 비자 발급 조건 완화 수준 -->
+                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                            <div class="flex justify-between items-center mb-2">
+                                <label for="range-visa" class="text-xs font-semibold text-slate-700">비자 발급 조건 완화</label>
+                                <span id="val-visa" class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">다소 엄격함</span>
+                            </div>
+                            <input type="range" id="range-visa" min="1" max="5" step="1" value="2" oninput="runSimulation()" class="w-full accent-indigo-600 cursor-pointer">
+                            <p class="text-[10px] text-slate-400 mt-1">조건을 완화할수록 전문·비전문 인력이 신속히 유입되지만 기초 치안과 심사 관리에 어려움이 있을 수 있습니다.</p>
+                        </div>
+
+                        <!-- 4. 정착 및 정서 지원 지수 -->
+                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                            <div class="flex justify-between items-center mb-2">
+                                <label for="range-settle" class="text-xs font-semibold text-slate-700">이주민 권리 보호 강도</label>
+                                <span id="val-settle" class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">중간 수준</span>
+                            </div>
+                            <input type="range" id="range-settle" min="1" max="3" step="1" value="2" oninput="runSimulation()" class="w-full accent-indigo-600 cursor-pointer">
+                            <p class="text-[10px] text-slate-400 mt-1">이주민 인권 단체 활동 장려, 차별 금지 처벌법 등 사회적 포용을 향상시킵니다.</p>
+                        </div>
+                    </div>
+
+                    <!-- 예측 시뮬레이션 리포트 & 실시간 가로 차트 -->
+                    <div class="lg:col-span-7 space-y-6">
+                        <div class="bg-slate-900 text-white rounded-3xl p-6 shadow-md flex flex-col justify-between h-full min-h-[350px]">
+                            <div>
+                                <div class="flex justify-between items-center border-b border-slate-800 pb-4 mb-4">
+                                    <h3 class="font-bold text-sm text-indigo-300 flex items-center gap-1.5">
+                                        <i data-lucide="bar-chart-3" class="w-4 h-4"></i> 실시간 정책 효과 모니터링
+                                    </h3>
+                                    <span class="text-[11px] bg-slate-800 text-slate-300 px-2.5 py-1 rounded-md">예측 단위: 5년차 누적</span>
+                                </div>
+
+                                <!-- 지표 목록 (가로 차트 바형태로 구현) -->
+                                <div class="space-y-4">
+                                    <!-- 1. 노동력 확보율 -->
+                                    <div class="space-y-1.5">
+                                        <div class="flex justify-between text-xs">
+                                            <span class="text-slate-300">⚙️ 노동력 부족 해소율</span>
+                                            <span id="chart-labor-val" class="font-bold text-indigo-400">0%</span>
+                                        </div>
+                                        <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                                            <div id="chart-labor-bar" class="bg-indigo-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 2. 사회적 조화도 -->
+                                    <div class="space-y-1.5">
+                                        <div class="flex justify-between text-xs">
+                                            <span class="text-slate-300">🤝 사회적 조화 및 갈등 저하도</span>
+                                            <span id="chart-harmony-val" class="font-bold text-emerald-400">0%</span>
+                                        </div>
+                                        <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                                            <div id="chart-harmony-bar" class="bg-emerald-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 3. 재정 안정성 -->
+                                    <div class="space-y-1.5">
+                                        <div class="flex justify-between text-xs">
+                                            <span class="text-slate-300">💸 국가 재정 보존율 (지출 영향)</span>
+                                            <span id="chart-finance-val" class="font-bold text-amber-400">0%</span>
+                                        </div>
+                                        <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                                            <div id="chart-finance-bar" class="bg-amber-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 4. 문화 다양성 지수 -->
+                                    <div class="space-y-1.5">
+                                        <div class="flex justify-between text-xs">
+                                            <span class="text-slate-300">🎨 문화적 다원성 및 창의 지수</span>
+                                            <span id="chart-diversity-val" class="font-bold text-fuchsia-400">0%</span>
+                                        </div>
+                                        <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                                            <div id="chart-diversity-bar" class="bg-fuchsia-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 실시간 종합 분석 멘트 -->
+                            <div class="mt-6 p-4 bg-slate-800/60 rounded-xl border border-slate-800 text-xs">
+                                <span class="font-bold text-indigo-300 flex items-center gap-1 mb-1">
+                                    <i data-lucide="info" class="w-3.5 h-3.5"></i> 시뮬레이터 실시간 진단
+                                </span>
+                                <p id="simulation-verdict" class="text-slate-300 leading-relaxed">변수를 조정하시면 실시간 분석 보고가 출력됩니다.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 탭 전환 유도 버튼 -->
+                <div class="flex justify-between items-center pt-4 border-t border-slate-100">
+                    <button onclick="switchTab('learn')" class="text-slate-500 hover:text-slate-800 font-semibold text-sm flex items-center gap-1">
+                        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                        <span>배움 및 탐색으로 돌아가기</span>
+                    </button>
+                    <button onclick="saveAndGoToReport()" class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-xl transition shadow-lg shadow-indigo-100">
+                        <span>시뮬레이션 값으로 보고서 작성</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- 탭 3: 성찰 & 제출 -->
+            <section id="tab-content-report" class="tab-pane p-6 sm:p-8 space-y-8 hidden">
+                <div class="border-b border-slate-100 pb-5">
+                    <div class="flex items-center gap-2 text-indigo-600 font-semibold text-sm mb-1">
+                        <i data-lucide="send" class="w-4 h-4"></i> Submit Student Learning Report
+                    </div>
+                    <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">학습 결과 및 성찰 보고서</h2>
+                    <p class="text-slate-500 mt-1">시뮬레이션을 통해 직접 설계한 이주 정책의 결과를 요약하고 성찰 질문에 답해 보세요. 작성한 보고서는 선생님에게 제출됩니다.</p>
+                </div>
+
+                <!-- 실시간 시뮬레이션 결과 연동 연동 정보 박스 -->
+                <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">설계한 시뮬레이터 정책 종합</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="bg-white p-3 rounded-xl border border-slate-150">
+                            <span class="block text-[10px] text-slate-400">수용 한도</span>
+                            <span id="report-limit-val" class="text-sm font-bold text-slate-800">50,000 명</span>
+                        </div>
+                        <div class="bg-white p-3 rounded-xl border border-slate-150">
+                            <span class="block text-[10px] text-slate-400">사회통합 예산</span>
+                            <span id="report-budget-val" class="text-sm font-bold text-slate-800">40%</span>
+                        </div>
+                        <div class="bg-white p-3 rounded-xl border border-slate-150">
+                            <span class="block text-[10px] text-slate-400">비자 완화 수준</span>
+                            <span id="report-visa-val" class="text-sm font-bold text-slate-800">다소 엄격함</span>
+                        </div>
+                        <div class="bg-white p-3 rounded-xl border border-slate-150">
+                            <span class="block text-[10px] text-slate-400">이주민 권리 보호</span>
+                            <span id="report-settle-val" class="text-sm font-bold text-slate-800">보통</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 학생 서술 폼 -->
+                <form id="report-form" class="space-y-6">
+                    <!-- 학생 이름 동적 입력 영역 -->
+                    <div class="bg-indigo-50/50 p-5 rounded-2xl border border-indigo-100/50 space-y-3">
+                        <h3 class="text-sm font-bold text-indigo-900 flex items-center gap-1.5">
+                            <i data-lucide="info" class="w-4 h-4"></i> 인적사항 기재
+                        </h3>
+                        <div class="space-y-2">
+                            <label for="input-name" class="text-xs font-semibold text-slate-700 flex items-center gap-1">
+                                <span class="text-indigo-600 font-bold">*</span> 번호 / 이름을 입력해 주세요
+                            </label>
+                            <input type="text" id="input-name" oninput="syncStudentName(this.value)" placeholder="예시: 김철수 (입력 시 상단 배지 이름이 실시간 변경됩니다)" 
+                                   class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-600 text-sm outline-none transition font-medium" required>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label for="input-theme" class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                            <span class="text-indigo-600">Q1.</span> 설계한 정책의 핵심 의도는 무엇인가요?
+                        </label>
+                        <input type="text" id="input-theme" placeholder="예시: 경제 성장과 인구 감소 문제 해결에 중점을 두되 사회 통합 교육을 대폭 늘렸습니다." 
+                               class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-600 text-sm outline-none transition" required>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label for="input-desc" class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                            <span class="text-indigo-600">Q2.</span> 이주민과 선주민이 조화로운 '함께 사는 공존 공동체'를 이룩하기 위해 사회 구성원이 기울여야 할 가장 중요한 노력은 무엇이라고 보나요? (자신의 생각을 풍부히 적으세요)
+                        </label>
+                        <textarea id="input-desc" rows="5" placeholder="예시: 선주민들은 다문화에 대한 편견이나 두려움을 내려놓고 그들을 우리 사회의 구성원으로 적극적으로 포용해 줄 문화 존중이 필요합니다. 정부는 한글 교육과 주거, 법률 수단을 강화해 갈등을 미연에 방지해야 합니다." 
+                                  class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-600 text-sm outline-none transition leading-relaxed" required></textarea>
+                    </div>
+
+                    <!-- 제출하기 버튼 -->
+                    <div class="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <p class="text-xs text-slate-500">보고서를 전송하면 선생님의 평가 시스템에 실시간으로 접수됩니다.</p>
+                        <button type="submit" id="submit-btn" class="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-8 py-3.5 rounded-xl transition shadow-lg shadow-emerald-100">
+                            <i data-lucide="check-circle" class="w-5 h-5"></i>
+                            <span>선생님께 최종 제출하기</span>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- 선생님 피드백 뷰어 -->
+                <div class="bg-indigo-50/70 rounded-3xl p-6 border border-indigo-100 space-y-4">
+                    <h3 class="text-base font-bold text-indigo-900 flex items-center justify-between">
+                        <span class="flex items-center gap-2">
+                            <i data-lucide="message-square" class="w-5 h-5"></i>
+                            선생님의 피드백 보관함
+                        </span>
+                        <span id="feedback-status" class="text-xs bg-slate-200 text-slate-700 px-2.5 py-0.5 rounded-full font-medium">대기 중</span>
+                    </h3>
+                    
+                    <div id="feedback-placeholder" class="text-slate-500 text-sm py-4 text-center">
+                        <p class="font-medium text-slate-700">제출된 보고서가 아직 없습니다.</p>
+                        <p class="text-xs text-slate-400 mt-1">상단의 성찰 보고서를 먼저 작성하고 제출해 주세요.</p>
+                    </div>
+
+                    <!-- 피드백 도착 시 활성화될 피드백 카드 -->
+                    <div id="feedback-card" class="bg-white p-5 rounded-2xl border border-indigo-100 shadow-sm hidden space-y-3">
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xs">
+                                    T
+                                </div>
+                                <span class="text-xs font-bold text-slate-800">이주민 공존 교육 담당 교사</span>
+                            </div>
+                            <span class="text-[11px] text-slate-400" id="feedback-time">실시간</span>
+                        </div>
+                        <p class="text-xs text-slate-600 leading-relaxed" id="feedback-text">
+                            기다려 주셔서 감사합니다. 곧 선생님용 대시보드에서 보낼 피드백이 여기에 수신됩니다.
+                        </p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- 모달 창 (성공/오류 알림용) -->
+    <div id="status-modal" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 text-center space-y-4 shadow-xl">
+            <div id="modal-icon" class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-xl">
+                <i data-lucide="check-circle" class="w-6 h-6"></i>
+            </div>
+            <div class="space-y-1">
+                <h3 id="modal-title" class="text-lg font-bold text-slate-900">제출 완료</h3>
+                <p id="modal-desc" class="text-xs text-slate-500">보고서가 선생님께 정상 전송되었습니다.</p>
+            </div>
+            <button onclick="closeModal()" class="w-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold py-2.5 rounded-xl transition">
+                확인
+            </button>
+        </div>
+    </div>
+
+    <!-- 푸터 -->
+    <footer class="bg-white border-t border-slate-200 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-xs text-slate-400">
+            &copy; 2026 국제 이주정책 시뮬레이터 교육 대시보드. All rights reserved.
+        </div>
+    </footer>
+
+    <!-- Firebase SDK Modular Import & 비즈니스 로직 연동 -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase 설정 에러 및 예외 핸들링을 추가한 모듈 통합
+        let app, auth, db;
+        let appId = 'default-app-id';
+        let firebaseReady = false;
+
+        try {
+            if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+                const firebaseConfig = JSON.parse(__firebase_config);
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                firebaseReady = true;
+            }
+        } catch (e) {
+            console.error("Firebase 초기화 에러 (로컬/데모 폴백 모드로 가동합니다):", e);
+        }
+
+        let currentUser = null;
+
+        // Firebase Auth 인증 처리 (규칙 3 준수)
+        const initAuth = async () => {
+            if (!firebaseReady) {
+                document.getElementById('student-uid-label').innerText = "임시 오프라인 모드";
+                return;
+            }
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("인증 도중 문제가 발생했습니다:", error);
+            }
+        };
+
+        initAuth();
+
+        // 인증 상태 모니터링 및 실시간 UI 업데이트
+        if (firebaseReady) {
+            onAuthStateChanged(auth, (user) => {
+                currentUser = user;
+                if (user) {
+                    // UI 바인딩 - 완전한 UID 노출 처리
+                    document.getElementById('student-uid-label').innerText = `ID: ${user.uid}`;
+                    
+                    // 해당 학생에게 도착하는 교사 피드백 실시간으로 듣기 & 기존 입력 정보가 있다면 가져오기
+                    listenForTeacherFeedback(user.uid);
+                }
+            });
+        }
+
+        // 선생님 피드백 실시간 수신 리스너 (Rule 1 & Rule 2) + 기존 작성명 불러오기
+        function listenForTeacherFeedback(uid) {
+            if (!firebaseReady) return;
+            const reportRef = doc(db, 'artifacts', appId, 'public', 'data', 'reports', uid);
+            
+            onSnapshot(reportRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    
+                    // 기존에 저장된 이름이 존재한다면 불러와 동기화
+                    if (data.studentName && data.studentName.trim() !== "") {
+                        document.getElementById('input-name').value = data.studentName;
+                        syncStudentName(data.studentName);
+                    }
+
+                    // 만약 제출 완료된 상태라면 UI를 고정 상태로 변경
+                    if (data.status === 'submitted') {
+                        // 성찰 질문들 기입된 값 복원
+                        if (data.q1) document.getElementById('input-theme').value = data.q1;
+                        if (data.q2) document.getElementById('input-desc').value = data.q2;
+                        lockSubmissionUI();
+                    }
+
+                    // 교사 피드백 필드가 추가된 경우
+                    if (data.feedback && data.feedback.trim() !== "") {
+                        document.getElementById('feedback-placeholder').classList.add('hidden');
+                        document.getElementById('feedback-card').classList.remove('hidden');
+                        
+                        document.getElementById('feedback-status').innerText = "평가 및 피드백 완료";
+                        document.getElementById('feedback-status').className = "text-xs bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-medium";
+                        
+                        document.getElementById('feedback-text').innerText = data.feedback;
+                        lucide.createIcons();
+                    } else if (data.status === 'submitted') {
+                        // 피드백 대기중 상태 표시
+                        document.getElementById('feedback-status').innerText = "선생님 검토 중";
+                        document.getElementById('feedback-status').className = "text-xs bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full font-medium";
+                        document.getElementById('feedback-placeholder').innerHTML = `
+                            <p class="font-medium text-slate-700">보고서가 선생님께 정상 제출되었습니다.</p>
+                            <p class="text-xs text-slate-400 mt-1">선생님용 대시보드에서 평가를 작성하면 이곳에 실시간 반영됩니다.</p>
+                        `;
+                    }
+                }
+            }, (error) => {
+                console.error("데이터 수집 오류:", error);
+            });
+        }
+
+        // 제출 완료 시 UI 폼 입력 잠금 함수
+        window.lockSubmissionUI = function() {
+            const submitBtn = document.getElementById('submit-btn');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.className = "flex items-center justify-center gap-2 bg-slate-400 text-white font-semibold px-8 py-3.5 rounded-xl transition cursor-not-allowed";
+                submitBtn.innerHTML = '<i data-lucide="lock" class="w-5 h-5"></i> <span>제출 완료 및 데이터 보호됨</span>';
+            }
+            
+            const nameInput = document.getElementById('input-name');
+            const q1Input = document.getElementById('input-theme');
+            const q2Input = document.getElementById('input-desc');
+            if (nameInput) nameInput.disabled = true;
+            if (q1Input) q1Input.disabled = true;
+            if (q2Input) q2Input.disabled = true;
+            lucide.createIcons();
+        }
+
+        // 보고서 제출 함수 - Firestore에 실시간 병합 (Rule 1 & Rule 3 준수)
+        window.submitReportToFirebase = async function() {
+            const sName = document.getElementById('input-name').value;
+            const theme = document.getElementById('input-theme').value;
+            const desc = document.getElementById('input-desc').value;
+
+            if (!sName || !sName.trim()) {
+                openModal("이름 입력 누락", "학생 본인의 이름을 꼭 작성해 주세요.", false);
+                return;
+            }
+
+            if (!theme || !theme.trim() || !desc || !desc.trim()) {
+                openModal("입력 확인", "모든 답변 항목을 입력해주셔야 제출이 가능합니다.", false);
+                return;
+            }
+
+            if (!firebaseReady || !currentUser) {
+                // Firebase 미구동 시 데모용 임시 저장 모드로 매끄럽게 처리해 줍니다. (오류 먹통 방지)
+                openModal("보고서 제출 성공 (데모)", `${sName} 학생의 보고서가 임시 보관되었습니다. (교사용 피드백이 6초 후에 임시 수신됩니다.)`);
+                lockSubmissionUI();
+                simulateLocalFeedback();
+                return;
+            }
+
+            // `/artifacts/{appId}/public/data/reports/{userId}` 타겟 문서 (Rule 1)
+            const reportRef = doc(db, 'artifacts', appId, 'public', 'data', 'reports', currentUser.uid);
+
+            const reportData = {
+                studentId: currentUser.uid,
+                studentName: sName.trim(),
+                policyVars: {
+                    limit: policyVars.limit,
+                    budget: policyVars.budget,
+                    visa: policyVars.visa,
+                    settle: policyVars.settle
+                },
+                q1: theme.trim(),
+                q2: desc.trim(),
+                submittedAt: new Date().toISOString(),
+                status: 'submitted',
+                feedback: "" // 초기 피드백은 빈 값
+            };
+
+            try {
+                await setDoc(reportRef, reportData);
+                openModal("보고서 제출 성공", `${sName} 학생의 보고서가 Firebase에 성공적으로 저장되었습니다!`);
+                lockSubmissionUI();
+            } catch (err) {
+                console.error("Firestore 제출 실패:", err);
+                openModal("서버 전송 오류", "전송 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.", false);
+            }
+        };
+
+        // 가상 로컬 교사 피드백 트리거 (데모용)
+        function simulateLocalFeedback() {
+            document.getElementById('feedback-status').innerText = "선생님 검토 중";
+            document.getElementById('feedback-status').className = "text-xs bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full font-medium";
+
+            setTimeout(() => {
+                document.getElementById('feedback-placeholder').classList.add('hidden');
+                document.getElementById('feedback-card').classList.remove('hidden');
+                
+                document.getElementById('feedback-status').innerText = "평가 완료";
+                document.getElementById('feedback-status').className = "text-xs bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-medium";
+                
+                let finalFeedback = "";
+                if (policyVars.budget >= 60) {
+                    finalFeedback = "📝 [이주정책 담당 교사 피드백]: 복지와 사회 통합 예산을 균형 있게 편성한 점이 매우 돋보입니다! 갈등을 최소화하고 다양성을 제고하여 평화로운 공존 가치를 깊이 고찰했군요. 훌륭한 성찰 태도입니다. (평가 등급: Excellent)";
+                } else {
+                    finalFeedback = "📝 [이주정책 담당 교사 피드백]: 경제적인 시나리오 측면에 중점을 두어 실무적인 국가 재정을 안정적으로 기획했습니다. 다음 단계로 통합 갈등과 조화를 위한 보장 수단도 살짝 보완하면 최고의 시너지 시민 교육 모델이 완성될 수 있겠네요! (평가 등급: Good)";
+                }
+                document.getElementById('feedback-text').innerText = finalFeedback;
+                lucide.createIcons();
+            }, 6000);
+        }
+
+        // UID 복사 기능
+        window.copyUID = function() {
+            const uidText = currentUser ? currentUser.uid : "local-demo-session";
+            const el = document.createElement('textarea');
+            el.value = uidText;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            openModal("복사 완료", "고유 학생 고유 ID(UID)가 클립보드에 복사되었습니다. 선생님용 대시보드에 입력해 보세요!");
+        }
+    </script>
+
+    <!-- UI/UX 제어용 핵심 자바스크립트 -->
+    <script>
+        // 현재 선택된 탭 정보
+        let currentTab = 'learn';
+
+        // 시뮬레이터의 실시간 전역 변수
+        let policyVars = {
+            limit: 50000,
+            budget: 40,
+            visa: 2,
+            settle: 2
+        };
+
+        // 이름 입력 실시간 동기화 함수
+        function syncStudentName(nameValue) {
+            const displayEl = document.getElementById('student-name-display');
+            const avatarEl = document.getElementById('student-avatar');
+            
+            if (nameValue && nameValue.trim() !== "") {
+                const cleanName = nameValue.trim();
+                displayEl.innerText = cleanName;
+                displayEl.classList.remove('text-slate-400');
+                displayEl.classList.add('text-indigo-600', 'font-bold');
+                
+                // 첫 글자를 아바타 이미지 텍스트로 활용
+                avatarEl.innerText = cleanName.charAt(0).toUpperCase();
+                avatarEl.className = "w-10 h-10 bg-indigo-100 text-indigo-700 rounded-full flex items-center justify-center font-bold text-sm border-2 border-indigo-200";
+            } else {
+                displayEl.innerText = "이름 미설정";
+                displayEl.classList.add('text-slate-400');
+                displayEl.classList.remove('text-indigo-600', 'font-bold');
+                
+                avatarEl.innerText = "?";
+                avatarEl.className = "w-10 h-10 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center font-bold text-sm border-2 border-slate-200";
+            }
+        }
+
+        // 탭 전환 시스템
+        function switchTab(tabId) {
+            // 모든 탭 버튼 비활성화 상태로 변경
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-indigo-600', 'text-white', 'shadow-md', 'shadow-indigo-100');
+                btn.classList.add('text-slate-600', 'hover:bg-slate-100', 'hover:text-slate-900');
+            });
+
+            // 모든 콘텐츠 숨기기
+            document.querySelectorAll('.tab-pane').forEach(pane => {
+                pane.classList.add('hidden');
+            });
+
+            // 선택된 탭 버튼 활성화
+            const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+            activeBtn.classList.remove('text-slate-600', 'hover:bg-slate-100', 'hover:text-slate-900');
+            activeBtn.classList.add('bg-indigo-600', 'text-white', 'shadow-md', 'shadow-indigo-100');
+
+            // 선택된 콘텐츠 보여주기
+            document.getElementById(`tab-content-${tabId}`).classList.remove('hidden');
+
+            currentTab = tabId;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // 시뮬레이터 연동 연산 시스템
+        function runSimulation() {
+            const limit = parseInt(document.getElementById('range-limit').value);
+            const budget = parseInt(document.getElementById('range-budget').value);
+            const visa = parseInt(document.getElementById('range-visa').value);
+            const settle = parseInt(document.getElementById('range-settle').value);
+
+            // 로컬 변수 객체 업데이트
+            policyVars.limit = limit;
+            policyVars.budget = budget;
+            policyVars.visa = visa;
+            policyVars.settle = settle;
+
+            // 라벨 정보 실시간 기입
+            document.getElementById('val-limit').innerText = `${limit.toLocaleString()} 명`;
+            document.getElementById('val-budget').innerText = `${budget} %`;
+
+            // 비자 완화 라벨 텍스트 변경
+            const visaLabels = {
+                1: '엄격함 (기본 입국)',
+                2: '다소 엄격함',
+                3: '보통',
+                4: '조금 완화',
+                5: '대폭 완화 (프리패스)'
+            };
+            document.getElementById('val-visa').innerText = visaLabels[visa];
+
+            // 이주민 보호 라벨 텍스트 변경
+            const settleLabels = {
+                1: '최소 지원',
+                2: '중간 수준',
+                3: '완벽 보장'
+            };
+            document.getElementById('val-settle').innerText = settleLabels[settle];
+
+            // 정책 지표 계산 메커니즘
+            let laborScore = Math.min(100, Math.round(((limit / 200000) * 60) + (visa * 8)));
+            let baseHarmony = (budget * 0.7) + (settle * 10);
+            let negativeImpact = ((limit / 200000) * 30) + (visa * 5);
+            let harmonyScore = Math.max(10, Math.min(100, Math.round(baseHarmony - negativeImpact + 20)));
+            let totalSpend = (budget * 0.5) + (settle * 12);
+            let revenueBonus = laborScore * 0.3;
+            let financeScore = Math.max(10, Math.min(100, Math.round(90 - totalSpend + revenueBonus)));
+            let diversityScore = Math.min(100, Math.round(((limit / 200000) * 40) + (budget * 0.4) + (settle * 8)));
+
+            // 가로 그래프 바 연동 및 수치 기입
+            updateChartBar('chart-labor-bar', 'chart-labor-val', laborScore);
+            updateChartBar('chart-harmony-bar', 'chart-harmony-val', harmonyScore);
+            updateChartBar('chart-finance-bar', 'chart-finance-val', financeScore);
+            updateChartBar('chart-diversity-bar', 'chart-diversity-val', diversityScore);
+
+            // 실시간 진단 및 코멘트 평가 작성
+            let verdict = "";
+            if (harmonyScore < 40) {
+                verdict = "⚠️ 경고: 노동력 유입이 빠르지만 사회통합 지원 예산이 낮아 정착 및 지역사회 내 갈등 지수가 고조되고 있습니다. 예산을 올리거나 한도를 조금 낮춰 조화를 유지하세요.";
+            } else if (financeScore < 40) {
+                verdict = "💸 경고: 우수한 복지와 사회 통합 정책 덕분에 상호 신뢰와 결속력은 좋으나, 재정 부담 지출이 과도합니다. 세부 예산을 효율적으로 절감할 방안을 모색하세요.";
+            } else if (laborScore < 40) {
+                verdict = "⚠️ 인력 공급 경보: 이주 장벽이 매우 높아 생산 연령 인구 축소 문제 해결에 실효성이 부족합니다. 비자 제도를 정밀 보완해 수치를 개선하세요.";
+            } else if (harmonyScore >= 70 && financeScore >= 60 && laborScore >= 65) {
+                verdict = "🏅 훌륭한 균형 달성! 노동 시장 활성화, 국가 재정 수용성, 지역 공동체 조화와 다양성이 골고루 최고 조화를 이루고 있는 지속가능한 명품 정책입니다!";
+            } else {
+                verdict = "✅ 안정적인 시동: 균형 잡힌 방향으로 세팅되고 있습니다. 좀 더 사회 통합이나 노동력 확보 측면으로 개별 파라미터를 조절하여 황금 비율에 도전해 보세요.";
+            }
+            document.getElementById('simulation-verdict').innerText = verdict;
+        }
+
+        // 공통 가로 바 및 텍스트 업데이트 헬퍼 함수
+        function updateChartBar(barId, valId, score) {
+            const bar = document.getElementById(barId);
+            const val = document.getElementById(valId);
+            bar.style.width = `${score}%`;
+            val.innerText = `${score}%`;
+        }
+
+        // 시뮬레이터 결과를 성찰 보고서에 주입 후 탭 이동하는 유도 기능
+        function saveAndGoToReport() {
+            document.getElementById('report-limit-val').innerText = `${policyVars.limit.toLocaleString()} 명`;
+            document.getElementById('report-budget-val').innerText = `${policyVars.budget} %`;
+            
+            const visaLabels = { 1: '엄격함', 2: '다소 엄격함', 3: '보통', 4: '조금 완화', 5: '대폭 완화' };
+            document.getElementById('report-visa-val').innerText = visaLabels[policyVars.visa];
+            
+            const settleLabels = { 1: '최소 지원', 2: '중간 수준', 3: '완벽 보장' };
+            document.getElementById('report-settle-val').innerText = settleLabels[policyVars.settle];
+
+            switchTab('report');
+        }
+
+        // 모달 제어 시스템
+        function openModal(title, desc, isSuccess = true) {
+            const icon = document.getElementById('modal-icon');
+            if (isSuccess) {
+                icon.className = "w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-xl";
+                icon.innerHTML = '<i data-lucide="check-circle" class="w-6 h-6"></i>';
+            } else {
+                icon.className = "w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto text-xl";
+                icon.innerHTML = '<i data-lucide="alert-triangle" class="w-6 h-6"></i>';
+            }
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-desc').innerText = desc;
+            document.getElementById('status-modal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeModal() {
+            document.getElementById('status-modal').classList.add('hidden');
+        }
+
+        // 보고서 제출 이벤트 처리
+        document.getElementById('report-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            // 전역 스크립트 모듈의 Firebase 제출 핸들러 연결 호출
+            if (window.submitReportToFirebase) {
+                window.submitReportToFirebase();
+            }
+        });
+
+        // 페이지 최초 진입 시 초기화
+        window.onload = function() {
+            lucide.createIcons();
+            runSimulation();
+        };
+    </script>
+</body>
+</html>
